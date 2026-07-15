@@ -8,9 +8,9 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from app.core.config import get_settings
 from app.db.base import Base
 
-# Importa aqui os módulos de modelos ORM à medida que forem criados (Fase 2+),
-# para que fiquem registrados em Base.metadata antes do autogenerate:
-# import app.models.migracao  # noqa: F401
+# Módulos de modelos ORM registrados em Base.metadata antes do autogenerate.
+import app.models.template  # noqa: F401,E402
+import app.models.tipo_migracao  # noqa: F401,E402
 
 config = context.config
 

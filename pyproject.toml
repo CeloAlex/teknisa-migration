@@ -30,5 +30,10 @@ package = false
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# Sessão inteira compartilha um único event loop: o engine async (SQLAlchemy/asyncpg) é um
+# singleton criado na importação de app.db.session, então recriar o loop por teste (padrão do
+# pytest-asyncio) quebra o pool de conexões no Windows (ProactorEventLoop).
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 testpaths = ["tests"]
 pythonpath = ["."]
