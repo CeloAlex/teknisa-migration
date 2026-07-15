@@ -1,0 +1,111 @@
+é necessário que o protótipo tenha um local destinado à criação do tipo de migração (onde faremos a associação da entidade/tabela do banco de dados, campos com a respectiva tag ou coluna do xlsx). Seria possível fazer exemplos de validações para todas as validações já contidas e formatação dos inserts realizados pelas planilhas do excel disponíveis? É possível fazer uma simulação completa de uma importação de arquivo excel? Posso te informar a que se refere cada coluna (ou faixa de coluna), onde se iniciam as linhas com os dados e onde se iniciam as linhas com as validações/ajustes nos dados contidos nas 5 planilhas disponíveis. Faça um tipo de migração para a importação das 5 planilhas na ordem e tipos que permitam a importação individual de cada uma destas planilhas.
+Para a associação da coluna com um respectivo campo do banco de dados, no protótipo, simule um dicionário de dados com as colunas já contidas nas planilhas disponibilizadas neste contexto.
+Seria importante o tipo do template indicar se será uma inserção, ajuste (que deverá dar um update no oracle considerando todos os campos) ou um delete da linha (cujo template, em qualquer entidade, será feito a partir dos números de chaves listadas conforme a pk de cada tabela);
+
+Abaixo, seguem maior detalhamento de 4 das planilhas compartilhadas para que as informações possam ser utilizadas para você sugerir um protótipo navegável onde, de fato, seja possível simular a importação de informações inclusive e geração de sql;
+
+Na criação da migração, senti falta da indicação do banco de dados que seria utilizado;
+
+Senti falta do cadastro destinado a criação de novos tipos de migração onde seriam criados os templates ordenados para a importação das informações;
+
+
+
+00_Agencias_Bancarias.xlsx
+
+Coluna A Banco	
+Coluna B Cd. Agência	
+Coluna C Agência
+
+Dados começam a partir da linha 2 
+
+Inserts que foram elaborados começam a partir da linha 2 na coluna E;
+
+A Coluna D1 possui o número da organização, mas espera-se que este número já seja definido pelo próprio número da organização que está sendo migrada;
+
+===
+
+01_Estrutura_v12 [melhorias da v11].xlsx
+
+Entre as colunas A a AD estão os dados a partir da linha 3;
+Entre as colunas A a AD na linha 2 estão os labels de cada coluna que refere-se a qual informação estará contida na respectiva celula;
+
+Coluna AE possui uma condição para proceder com a inserção ou não da respectiva informação (também a partir da linha 3);
+
+AF2 - possui o número da organização, mas espera-se que este número já seja definido pelo próprio número da organização que está sendo migrada;
+
+Linha 1 possui referências ao nome da coluna entre @ que são utilizadas pelos scripts de inserção;
+
+Entre as colunas AG a AJ, a partir da linha 3, estão os dados a serem inseridos nas colunas que possuem sequencial e o valor inicial de cada coluna está definido nas células AG2, AH2, AI2, AJ2;
+
+Entre as colunas AK e BL, a partir da linha 3, estão as colunas cujo valor foi ajustado conforme regras de preenchimento dos campos (retiradas de caracteres especiais por exemplo).
+
+Na coluna BM2, está o template (fórmula) para a geração do insert da tabela PARCNEGOCIO e, a partir da linha 3, na mesma coluna BM, está o insert verdadeiro da respectiva tabela.
+
+Na coluna BN2, está o template (fórmula) para a geração do insert da tabela ENDERECOPARC e, a partir da linha 3, na mesma coluna BN, está o insert verdadeiro da respectiva tabela.
+
+Na coluna BO, a partir da linha 3, está a validação se o dado será ou não inserido e, caso seja inserido, acrescenta-se ao script de inserção a descrição COMMIT;
+
+Colunas BP e BQ, a partir da linha 3, possuem informações de configuração (com contagem de linha
+
+Entre as colunas BU2 e BX2, estão os comandos automáticos para buscar, no banco de dados, o próximo sequencial disponível.
+Ja, a partir da linha 3 entre as colunas BU a BX, estão as informações abaixo descritas (uma em cada linha):
+
+Mnemônico - descrição da coluna entre @ de cada uma das chaves primárias (sem o NRORG que refere-se ao número da organização)
+Tabela Nome da tabela 
+PK - descrição da coluna do sequencial da chave primária (sem o NRORG que refere-se ao número da organização)
+Inicio Indica o primeiro sequencial a ser utilizado na inserção da respectiva tabela (de acordo com a quantidade de registros);
+Fim PK Indica o último sequencial a ser utilizado na inserção da respectiva tabela  (de acordo com a quantidade de registros);
+Quantidade - quantidade de registros 
+Organização - Numero da organização;
+
+Entre as colunas BU2 e BX2, estão os comandos automáticos para buscar, no banco de dados, o próximo sequencial disponível.
+Tabelas PARCNEGOCIO, ESTRUTURAM, ESTRUTURAH, ENDERECOPARC
+Ja, a partir da linha 3 entre as colunas BU a BX, estão as informações abaixo descritas (uma em cada linha):
+
+Mnemônico - descrição da coluna entre @ de cada uma das chaves primárias (sem o NRORG que refere-se ao número da organização)
+Tabela Nome da tabela 
+PK - descrição da coluna do sequencial da chave primária (sem o NRORG que refere-se ao número da organização)
+Inicio Indica o primeiro sequencial a ser utilizado na inserção da respectiva tabela (de acordo com a quantidade de registros);
+Fim PK Indica o último sequencial a ser utilizado na inserção da respectiva tabela  (de acordo com a quantidade de registros);
+Quantidade - quantidade de registros 
+Organização - Numero da organização;
+
+entre BZ2 e CC2, são comandos para validarem se os sequenciais gerados darão violação da chave primária;
+
+entre CE2 e CH2, são comandos para atualizarem a tabela que armazena o novo_codigo para que seja reutilizado;
+
+CI2 é a descrição commit;
+
+===
+
+02_Ocupação_v07.xlsx
+
+Entre as colunas A2 a G2, é o label das informações de cada coluna. A partir da linha 3 nestas mesmas colunas, são as informações;
+Coluna I2 possui o número da organização que poderá ser emitido através da nova migração a ser inserida;
+Coluna H, possui uma verificação da quantidade de registros 
+Entre as colunas I2 A k2, estão o primeiro número do sequencial a ser utilizado pelo insert;
+entre as colunas l a n, estão os valores default para as datas de início de vigência, fim de vigência e competência respectivamente;
+Linha 1 mostra os nomes do campos entre os @ para serem utilizados como referência para criar os inserts;
+Coluna Q possui o insert criado de cada linha (a partir da linha 3) com base no template de insert contido na linha 2 coluna Q;
+A partir da coluna S, temos Mnemônico, Tabela, PK, Inicio PK, Fim PK, Quantidade, Organização
+
+===
+
+03_EscalaTrabalho_v09.xlsx
+
+Entre as colunas A e K são os dados. Linha 2 possui o label da informação e, a partir da linha 3, estão os dados de fato;
+Coluna L tem recomendação sobre o formato das informações de algumas colunas;
+Columa M tem o número da organização (campo NRORG de qualquer tabela do contexto) possui o número da organização, mas espera-se que este número já seja definido pelo próprio número da organização que está sendo migrada;
+Entre as colunas N a V, tem os dados já trabalhados (respeitando as validações, ajustes, máscaras, retiradas de caracteres);
+A partir da coluna Y, temos informações do Mnemônico, Tabela, PK, Inicio PK, Fim PK, ,Quantidade, Organização
+
+ 
+ 
+
+
+ 
+
+
+
+
+

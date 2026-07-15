@@ -1,0 +1,2250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Protótipo — Plataforma de Migração de Dados - Teknisa</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#f4f6f9; --card:#ffffff; --border:#e2e6ec; --text:#1f2937; --muted:#6b7280;
+    --primary:#2554c7; --primary-dark:#1b3d92; --primary-bg:#eaf0ff;
+    --green:#1a8754; --green-bg:#e6f6ee;
+    --orange:#b8620a; --orange-bg:#fdf1e3;
+    --red:#c0392b; --red-bg:#fbeae8;
+    --purple:#6c3fc5; --purple-bg:#f1eafc;
+    --gray:#6b7280; --gray-bg:#eef0f3;
+    --teal:#0f8a8a; --teal-bg:#e3f6f6;
+    --radius:10px;
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--text); font-size:14px;}
+  header.topbar{
+    background:var(--primary-dark); color:#fff; padding:14px 22px;
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+  header.topbar h1{font-size:16px; margin:0; font-weight:600;}
+  header.topbar .sub{font-size:12px; opacity:.75; margin-top:2px;}
+  nav.topnav{
+    background:#16295e; display:flex; gap:4px; padding:0 18px;
+  }
+  nav.topnav .item{
+    padding:11px 16px; color:#c9d4f0; font-size:13px; font-weight:600; cursor:pointer; border-bottom:3px solid transparent;
+  }
+  nav.topnav .item.active{color:#fff; border-bottom-color:#5c8bff;}
+  main.content{padding:22px 26px; max-width:1280px; margin:0 auto;}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:20px 22px; margin-bottom:18px;}
+  .card h2{margin:0 0 4px 0; font-size:17px;}
+  .card h3{font-size:14.5px; margin:18px 0 8px;}
+  .card .desc{color:var(--muted); font-size:12.8px; margin-bottom:16px;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+  .grid4{display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+  label{display:block; font-size:12.3px; color:var(--muted); margin-bottom:5px; font-weight:600;}
+  select, input[type=text], input[type=number], input[type=date], input[type=email], textarea{
+    width:100%; padding:9px 10px; border:1px solid var(--border); border-radius:7px; font-size:13.5px; background:#fff; color:var(--text);
+  }
+  textarea{resize:vertical; min-height:60px; font-family:inherit;}
+  .field{margin-bottom:14px;}
+  .btn{
+    background:var(--primary); color:#fff; border:none; padding:9px 18px; border-radius:7px;
+    font-size:13px; font-weight:600; cursor:pointer;
+  }
+  .btn:hover{background:var(--primary-dark);}
+  .btn.secondary{background:var(--gray-bg); color:var(--text);}
+  .btn.secondary:hover{background:#e2e6ec;}
+  .btn.success{background:var(--green);}
+  .btn.success:hover{background:#146942;}
+  .btn.danger{background:var(--red);}
+  .btn.small{padding:5px 11px; font-size:11.8px;}
+  .btn[disabled]{opacity:.4; cursor:not-allowed;}
+  .btnbar{display:flex; gap:10px; margin-top:16px; justify-content:flex-end; flex-wrap:wrap;}
+  .badge{
+    display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px;
+    font-size:11.3px; font-weight:700; white-space:nowrap;
+  }
+  .badge.gray{background:var(--gray-bg); color:var(--gray);}
+  .badge.blue{background:var(--primary-bg); color:var(--primary);}
+  .badge.orange{background:var(--orange-bg); color:var(--orange);}
+  .badge.red{background:var(--red-bg); color:var(--red);}
+  .badge.green{background:var(--green-bg); color:var(--green);}
+  .badge.purple{background:var(--purple-bg); color:var(--purple);}
+  .badge.teal{background:var(--teal-bg); color:var(--teal);}
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  th,td{padding:8px 9px; border-bottom:1px solid var(--border); text-align:left; vertical-align:top;}
+  th{color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.03em; position:sticky; top:0; background:#fff;}
+  tr:hover td{background:#fafbfd;}
+  .tblwrap{max-height:420px; overflow:auto; border:1px solid var(--border); border-radius:8px;}
+  .mono{font-family:"SF Mono", Consolas, monospace; font-size:11.8px;}
+  .tabs{display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; border-bottom:1px solid var(--border); padding-bottom:0;}
+  .tab{
+    padding:9px 15px; font-size:12.6px; font-weight:600; cursor:pointer; color:var(--muted);
+    border-bottom:2.5px solid transparent; margin-bottom:-1px;
+  }
+  .tab.active{color:var(--primary); border-bottom-color:var(--primary);}
+  .tab.locked{opacity:.4; cursor:not-allowed;}
+  .pill-tabs{display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap;}
+  .pill{
+    padding:6px 13px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer;
+    border:1px solid var(--border); background:#fff; color:var(--muted);
+  }
+  .pill.active{background:var(--text); color:#fff; border-color:var(--text);}
+  .counters{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px;}
+  .counter{flex:1; min-width:110px; background:#fafbfd; border:1px solid var(--border); border-radius:8px; padding:12px 14px;}
+  .counter .n{font-size:21px; font-weight:700;}
+  .counter .l{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em;}
+  .progressbar{height:8px; background:var(--gray-bg); border-radius:4px; overflow:hidden; margin:10px 0;}
+  .progressbar .fill{height:100%; background:var(--primary); transition:width .4s;}
+  .loglist{max-height:260px; overflow:auto; border:1px solid var(--border); border-radius:8px;}
+  .logline{padding:8px 12px; border-bottom:1px solid var(--border); font-size:12px; display:flex; gap:10px; align-items:center;}
+  .logline:last-child{border-bottom:none;}
+  .dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+  .dot.ok{background:var(--green);} .dot.err{background:var(--red);} .dot.pending{background:var(--gray);}
+  .codebox{
+    background:#0f172a; color:#d1e7ff; padding:14px 16px; border-radius:8px; font-family:"SF Mono",Consolas,monospace;
+    font-size:11.5px; line-height:1.6; overflow:auto; max-height:320px; white-space:pre-wrap;
+  }
+  .banner{padding:12px 14px; border-radius:8px; font-size:12.6px; margin-bottom:16px; display:flex; gap:10px; align-items:flex-start;}
+  .banner.warn{background:var(--orange-bg); color:var(--orange);}
+  .banner.block{background:var(--red-bg); color:var(--red);}
+  .banner.info{background:var(--primary-bg); color:var(--primary);}
+  .banner.ok{background:var(--green-bg); color:var(--green);}
+  .mig-card{
+    display:flex; align-items:center; gap:16px; border:1px solid var(--border); border-radius:8px; padding:14px 16px; margin-bottom:10px;
+  }
+  .mig-card .org{font-weight:700; font-size:13.5px; width:190px;}
+  .mig-card .info{flex:1; font-size:12px; color:var(--muted);}
+  .mig-card .dl{display:flex; gap:6px; flex-wrap:wrap; width:230px;}
+  small.hint{color:var(--muted); font-size:11.3px;}
+  .diff{display:flex; gap:8px; align-items:center; font-size:12px;}
+  .diff .old{color:var(--red); text-decoration:line-through;}
+  .diff .new{color:var(--green); font-weight:600;}
+  .checkline{display:flex; align-items:center; gap:8px; font-size:12.5px; margin-bottom:8px;}
+  .tpl-catalog-card{border:1px solid var(--border); border-radius:8px; padding:14px 16px; margin-bottom:10px;}
+  .tpl-catalog-card .head{display:flex; align-items:center; gap:10px; justify-content:space-between;}
+  .tpl-catalog-card .head b{font-size:13.8px;}
+  .tpl-catalog-card .metabadges{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+  .dropzone{
+    border:2px dashed var(--border); border-radius:8px; padding:26px; text-align:center; color:var(--muted);
+    font-size:12.8px; cursor:pointer; background:#fafbfd;
+  }
+  .dropzone.over{border-color:var(--primary); background:var(--primary-bg); color:var(--primary);}
+  .op-choice{display:flex; gap:8px; margin-bottom:14px;}
+  .op-choice .opt{
+    flex:1; border:1.5px solid var(--border); border-radius:8px; padding:11px; text-align:center; cursor:pointer; font-size:12.6px; font-weight:600; color:var(--muted);
+  }
+  .op-choice .opt.sel{border-color:var(--primary); background:var(--primary-bg); color:var(--primary);}
+  .tpl-inline-block{border:1px solid var(--border); border-radius:8px; padding:16px; margin-top:10px; background:#fcfdfe;}
+  .timeline{display:flex; gap:0; margin-bottom:6px; overflow-x:auto;}
+  .timeline .tl-item{flex:1; min-width:92px; text-align:center; font-size:10.5px; color:var(--muted); position:relative; padding-top:16px;}
+  .timeline .tl-item::before{content:''; position:absolute; top:5px; left:50%; transform:translateX(-50%); width:9px; height:9px; border-radius:50%; background:var(--gray-bg); border:2px solid var(--border);}
+  .timeline .tl-item.done::before{background:var(--green); border-color:var(--green);}
+  .timeline .tl-item.now::before{background:var(--primary); border-color:var(--primary);}
+  .kv{display:flex; flex-wrap:wrap; gap:22px; font-size:12.3px; color:var(--muted);}
+  .kv b{color:var(--text);}
+  .closebar{display:flex; justify-content:flex-end;}
+  .linkbtn{background:none;border:none;color:var(--primary); font-size:12.3px; font-weight:600; cursor:pointer; padding:0;}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <h1>Plataforma de Migração de Dados - Teknisa</h1>
+  </div>
+</header>
+<nav class="topnav" id="topnav"></nav>
+<main class="content" id="content"></main>
+
+<script>
+/* =========================================================================
+   1) CATÁLOGO DE TEMPLATES — "dicionário de dados" genérico
+   Cada template descreve: aba/planilha, linha de cabeçalho, linha de início
+   dos dados, colunas de origem mapeadas para tabela/campo de destino,
+   geração de PK (quando aplicável), template real de INSERT extraído das
+   planilhas, e as regras de validação observadas.
+   ========================================================================= */
+
+// gerador de próximo código livre (equivalente à tabela NOVOCODIGO / "Busca de PK's livres")
+const PK_SERVICE = { contadores:{} };
+function pkProximoLivre(nrOrg, contador, seed, usados){
+  const chave = nrOrg+'|'+contador;
+  if(!(chave in PK_SERVICE.contadores)) PK_SERVICE.contadores[chave] = seed;
+  let candidato = PK_SERVICE.contadores[chave] + 1;
+  while(usados.has(candidato)) candidato++;
+  PK_SERVICE.contadores[chave] = candidato;
+  return candidato;
+}
+
+// ---- funções de conversão (equivalentes às fórmulas TRIM/SUBSTITUTE/TEXT das planilhas) ----
+const CONV = {
+  trim: v => (v===undefined||v===null) ? '' : String(v).trim(),
+  removerMascara: v => (v===undefined||v===null) ? '' : String(v).replace(/[\s\-\.\/\\]/g,''),
+  upperSemAcento: v => CONV.trim(v).toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,''),
+  zeroEsquerda: (v,n) => CONV.trim(v).padStart(n,'0'),
+  dataBR: v => {
+    if(v===undefined||v===null||v==='') return '';
+    let d;
+    if(v instanceof Date) d = v;
+    else if(typeof v === 'number') d = XLSX.SSF.parse_date_code(v);
+    else { const p = String(v).split(/[\/\-]/); if(p.length===3) return `${p[0].padStart(2,'0')}/${p[1].padStart(2,'0')}/${p[2].length===2?'20'+p[2]:p[2]}`; return String(v); }
+    if(d && d.y) return `${String(d.d).padStart(2,'0')}/${String(d.m).padStart(2,'0')}/${d.y}`;
+    if(d instanceof Date) return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+    return String(v);
+  },
+  numeroDecimal: v => (v===undefined||v===null||v==='') ? null : String(v).toString().replace(',','.'),
+  vazioParaN: v => CONV.trim(v)==='' ? 'N' : CONV.trim(v),
+};
+
+function decCol(letra){ return XLSX.utils.decode_col(letra); }
+
+function ehColunaDePlanilha(col){ return /^[A-Z]+$/.test(col||''); }
+
+// ---- motor genérico orientado por metadados (usado por templates criados via cadastro,
+//      sem necessidade de código específico — Secao 2 do documento de especificacao) ----
+function lerLinhaGenerica(tpl, row){
+  const campos = {};
+  tpl.dicionario.forEach(d=>{
+    if(!ehColunaDePlanilha(d.col) || d.campo==='—' || !d.campo) return;
+    const bruto = row[decCol(d.col)];
+    const fn = CONV[d.conversaoFn] || CONV.trim;
+    campos[d.campo] = d.conversaoFn ? fn(bruto) : (bruto===undefined?'':bruto);
+  });
+  return campos;
+}
+function validarLinhaGenerica(tpl, campos){
+  const r = [];
+  tpl.dicionario.forEach(d=>{
+    if(!d.campo || d.campo==='—') return;
+    const v = campos[d.campo];
+    if(d.obrigatorio===true && (v===undefined||v===null||v==='')){
+      r.push({sev:'erro', campo:d.campo, regra:'obrigatoriedade', recebido:'(vazio)', esperado:d.rotulo, orientacao:`Preencha o campo "${d.rotulo}".`});
+    } else if(d.tamanho && v!==undefined && v!==null && String(v).length>d.tamanho){
+      r.push({sev:'alerta', campo:d.campo, regra:'tamanho_maximo', recebido:String(v), esperado:`ate ${d.tamanho} caracteres`, orientacao:`Confira o valor de "${d.rotulo}".`});
+    }
+  });
+  return r;
+}
+function gerarInsertGenerica(tpl, campos, ctx, pk){
+  // se o template tiver um "template de script" manual com marcadores @CAMPO@ (o mesmo padrao
+  // observado nas seis planilhas originais), o motor faz substituicao de marcador — mais fiel
+  // ao que um DBA escreveria a mao (NVL, subqueries, LPAD etc). Caso contrario, cai no builder
+  // automatico simples (INSERT INTO tabela (colunas) VALUES (valores)).
+  // campos com PK gerada automaticamente (Busca de PK's livres / NOVOCODIGO) nao vem no "campos"
+  // lido da planilha — vem do objeto "pk" calculado em computarInsertLinha. O dicionario marca
+  // esses campos com col:'(gerado)' (nao e uma coluna real da planilha).
+  if(tpl.scriptTemplateManual){
+    let sql = tpl.scriptTemplateManual;
+    tpl.dicionario.forEach(d=>{
+      if(!d.marcador || !d.marcador.startsWith('@')) return;
+      const gerado = pk && Object.prototype.hasOwnProperty.call(pk, d.campo);
+      const v = gerado ? pk[d.campo] : campos[d.campo];
+      sql = sql.split(d.marcador).join((v===undefined||v===null)?'':String(v));
+    });
+    sql = sql.split('@NRORG@').join(ctx.nrOrg).split('@USUARIO_TECNICO@').join(ctx.usuarioTecnico);
+    return sql;
+  }
+  const porTabela = {};
+  tpl.dicionario.forEach(d=>{
+    if(!d.campo || d.campo==='—' || !d.tabela || d.tabela==='—' || d.tabela==='todas' || d.tabela==='variável') return;
+    (porTabela[d.tabela] = porTabela[d.tabela]||[]).push(d);
+  });
+  const partes = Object.entries(porTabela).map(([tabela, camposDef]) => {
+    const colunas = ['NRORG', ...camposDef.map(d=>d.campo)];
+    const valores = [ctx.nrOrg, ...camposDef.map(d=>{
+      const v = campos[d.campo];
+      if(v===undefined||v===null||v==='') return 'NULL';
+      return (d.tipo==='numerico'||d.tipo==='booleano') ? v : `'${v}'`;
+    })];
+    return `INSERT INTO ${tabela} ( ${colunas.join(', ')}, DTINCLUSAO, NRORGINCLUSAO, CDOPERINCLUSAO ) VALUES ( ${valores.join(', ')}, SYSDATE, ${ctx.nrOrg}, '${ctx.usuarioTecnico}' );`;
+  });
+  partes.push('COMMIT;');
+  return partes.join('\n');
+}
+
+
+const TEMPLATE_CATALOG = {
+
+  agencias: {
+    id:'agencias', nome:'Agências Bancárias', arquivoExemplo:'00_Agencias_Bancarias.xlsx',
+    formato:'XLSX', sheetName:'Sheet1', headerRow:1, dataStartRow:2,
+    operacoesPermitidas:['INCLUSAO','ALTERACAO','EXCLUSAO'],
+    tabelas:['AGENCIA'],
+    pkGeracao:null,
+    dicionario:[
+      {col:'A', rotulo:'Banco', marcador:'@CDBANCO@', tabela:'AGENCIA', campo:'CDBANCO', tipo:'texto', tamanho:3, obrigatorio:true, conversao:'trim', chave:'PK'},
+      {col:'B', rotulo:'Cd. Agência', marcador:'@CDAGENCIA@', tabela:'AGENCIA', campo:'CDAGENCIA', tipo:'texto', tamanho:4, obrigatorio:true, conversao:'trim', chave:'PK'},
+      {col:'C', rotulo:'Agência', marcador:'@NMAGENCIA@', tabela:'AGENCIA', campo:'NMAGENCIA', tipo:'texto', tamanho:60, obrigatorio:true, conversao:'trim', chave:''},
+      {col:'D1', rotulo:'Organização (célula fixa no arquivo original)', marcador:'@NRORG@', tabela:'AGENCIA', campo:'NRORG', tipo:'numerico', tamanho:null, obrigatorio:true, conversao:'—', chave:'FK', obs:'No motor genérico este valor NÃO é lido do arquivo: vem do contexto da migração (organização selecionada na criação).'},
+    ],
+    lerLinha(row){
+      return {
+        CDBANCO: CONV.trim(row[decCol('A')]),
+        CDAGENCIA: CONV.trim(row[decCol('B')]),
+        NMAGENCIA: CONV.trim(row[decCol('C')]),
+      };
+    },
+    validarLinha(campos, ctx){
+      const r = [];
+      if(!campos.CDBANCO) r.push({sev:'erro', campo:'CDBANCO', regra:'obrigatoriedade', recebido:'(vazio)', esperado:'código do banco (3 dígitos)', orientacao:'Preencha o código do banco.'});
+      else if(campos.CDBANCO.length>3) r.push({sev:'alerta', campo:'CDBANCO', regra:'tamanho_maximo', recebido:campos.CDBANCO, esperado:'até 3 caracteres', orientacao:'Confira o código do banco.'});
+      if(!campos.CDAGENCIA) r.push({sev:'erro', campo:'CDAGENCIA', regra:'obrigatoriedade', recebido:'(vazio)', esperado:'código da agência (4 dígitos)', orientacao:'Preencha o código da agência.'});
+      if(!campos.NMAGENCIA) r.push({sev:'erro', campo:'NMAGENCIA', regra:'obrigatoriedade', recebido:'(vazio)', esperado:'nome/descrição da agência', orientacao:'Preencha o nome da agência.'});
+      const existe = ctx.baseMock.AGENCIA.some(x=>x.CDBANCO===campos.CDBANCO && x.CDAGENCIA===campos.CDAGENCIA);
+      if(existe) r.push({sev:'alerta', campo:'CDBANCO/CDAGENCIA', regra:'duplicidade_no_destino', recebido:`${campos.CDBANCO}/${campos.CDAGENCIA}`, esperado:'combinação inexistente no destino', orientacao:'Registro já existe no destino — script de INCLUSÃO será convertido em no-op (idempotência); considere operação de ALTERAÇÃO.'});
+      return r;
+    },
+    gerarInsert(campos, ctx){
+      return `INSERT INTO AGENCIA ( CDBANCO,CDAGENCIA, NMAGENCIA, NRORG, DTINCLUSAO, CDOPERINCLUSAO, NRORGINCLUSAO, IDATIVO ) VALUES ( '${campos.CDBANCO}', '${campos.CDAGENCIA}', '${campos.NMAGENCIA}', ${ctx.nrOrg}, SYSDATE, '${ctx.usuarioTecnico}', ${ctx.nrOrg}, 'S' );`;
+    },
+    pkFields:{AGENCIA:['CDBANCO','CDAGENCIA']},
+    baseMockSeed:{AGENCIA:[{CDBANCO:'001', CDAGENCIA:'0019'}]},
+  },
+
+  estrutura: {
+    id:'estrutura', nome:'Estrutura Organizacional', arquivoExemplo:'01_Estrutura_v12.xlsx',
+    formato:'XLSX', sheetName:'Dados', headerRow:2, dataStartRow:3,
+    operacoesPermitidas:['INCLUSAO','ALTERACAO','EXCLUSAO'],
+    tabelas:['PARCNEGOCIO','ESTRUTURAM','ESTRUTURAH','ENDERECOPARC'],
+    pkGeracao:[
+      {campo:'NRPARCNEGOCIO', tabela:'PARCNEGOCIO', seed:1739},
+      {campo:'NRESTRUTURAM', tabela:'ESTRUTURAM', seed:167},
+      {campo:'NRESTRUTURAH', tabela:'ESTRUTURAH', seed:167},
+      {campo:'NRENDERECOPARC', tabela:'ENDERECOPARC', seed:1719},
+    ],
+    dicionario:[
+      {col:'A', rotulo:'Tipo de Estrutura Teknisa', marcador:'@NRTPESTRUTURA@', tabela:'ESTRUTURAM', campo:'NRTIPOESTRUTURA', tipo:'numerico', obrigatorio:true, conversao:'—', chave:'FK'},
+      {col:'B', rotulo:'Início de Vigência', marcador:'@DTINIVIGENCIA@', tabela:'ESTRUTURAM', campo:'DTINIVIGENCIA', tipo:'data', obrigatorio:true, conversao:'dataBR', chave:''},
+      {col:'C', rotulo:'Fim de Vigência', marcador:'@DTFIMVIGENCIA@', tabela:'ESTRUTURAM', campo:'DTFIMVIGENCIA', tipo:'data', obrigatorio:false, conversao:'dataBR', chave:''},
+      {col:'D', rotulo:'Nº Estrutura', marcador:'@NRESTRUTURA@', tabela:'ESTRUTURAM', campo:'CDINTESTRUTURA', tipo:'texto', obrigatorio:true, conversao:'trim', chave:'Identificador de negócio (usado na checagem de existência)'},
+      {col:'E', rotulo:'Mês Competência', marcador:'@COMPETENCIA@', tabela:'ESTRUTURAH', campo:'DTMESCOMPETENC', tipo:'data', obrigatorio:true, conversao:'dataBR', chave:''},
+      {col:'F', rotulo:'CNPJ', marcador:'@CNPJ@', tabela:'ESTRUTURAH', campo:'CDCNPJESTRUT', tipo:'texto', tamanho:14, obrigatorio:false, conversao:'removerMascara', chave:''},
+      {col:'G', rotulo:'CEI', marcador:'@CEI@', tabela:'ESTRUTURAH', campo:'CDCEIESTRUT', tipo:'texto', obrigatorio:false, conversao:'removerMascara', chave:''},
+      {col:'H', rotulo:'Razão Social', marcador:'@RAZAOSOCIAL@', tabela:'ESTRUTURAH', campo:'NMRAZSOCESTRUT', tipo:'texto', obrigatorio:false, conversao:'trim (remove aspas e &)', chave:''},
+      {col:'I', rotulo:'Natureza Jurídica', marcador:'@NATJURIDICA@', tabela:'ESTRUTURAH', campo:'CDNATUJURI', tipo:'texto', obrigatorio:false, conversao:'trim*', chave:''},
+      {col:'J', rotulo:'CNAE', marcador:'@CDCNAE@', tabela:'ESTRUTURAH', campo:'CDCNAE', tipo:'texto', obrigatorio:false, conversao:'trim*', chave:''},
+      {col:'K', rotulo:'FPAS', marcador:'(coletado, não utilizado no INSERT atual)', tabela:'—', campo:'—', tipo:'texto', obrigatorio:false, conversao:'—', chave:'', obs:'Coluna presente na planilha mas não referenciada pelo script de inserção observado.'},
+      {col:'L', rotulo:'CAGED', marcador:'@CDCAGED@', tabela:'ESTRUTURAH', campo:'NRCAGED', tipo:'texto', obrigatorio:false, conversao:'trim*', chave:''},
+      {col:'M', rotulo:'Tipo de Empresa', marcador:'@IDTPEMPRESA@', tabela:'ESTRUTURAH', campo:'IDTIPOEMPR', tipo:'texto', obrigatorio:false, conversao:'direto (sem transformação)', chave:''},
+      {col:'N', rotulo:'Optante Simples', marcador:'@IDSIMPLES@', tabela:'ESTRUTURAH', campo:'IDOPTSIMPLES', tipo:'booleano', obrigatorio:false, conversao:'vazio => "N" (NVL)', chave:''},
+      {col:'O', rotulo:'Participação PAT', marcador:'@IDPARTICIPAT@', tabela:'ESTRUTURAH', campo:'IDPARTICIPAT', tipo:'booleano', obrigatorio:false, conversao:'trim*', chave:''},
+      {col:'P', rotulo:'Tp Endereço', marcador:'@IDENDERECO@', tabela:'ENDERECOPARC', campo:'CDTIPOENDERECO', tipo:'texto', obrigatorio:false, conversao:'trim*', chave:'', obs:'Endereço só é inserido se Tp Endereço (P) e Logradouro (T) estiverem preenchidos.'},
+      {col:'Q', rotulo:'Pais', marcador:'@CDPAIS@', tabela:'ENDERECOPARC', campo:'CDPAIS', tipo:'texto', tamanho:4, obrigatorio:false, conversao:'zeroEsquerda(4) / LPAD', chave:''},
+      {col:'R', rotulo:'Estado', marcador:'@SGESTADO@', tabela:'ENDERECOPARC', campo:'SGESTADO', tipo:'texto', tamanho:2, obrigatorio:false, conversao:'trim*', chave:''},
+      {col:'S', rotulo:'Município', marcador:'@MUNICIPIO@', tabela:'ENDERECOPARC', campo:'CDMUNICIPIO', tipo:'texto', obrigatorio:false, conversao:'upperSemAcento', chave:'FK (subquery em MUNICIPIO)'},
+      {col:'T', rotulo:'Logradouro', marcador:'@LOGRADOURO@', tabela:'ENDERECOPARC', campo:'CDLOGRADOURO', tipo:'texto', obrigatorio:false, conversao:'trim*', chave:''},
+      {col:'U', rotulo:'Endereço', marcador:'@ENDERECO@', tabela:'ENDERECOPARC', campo:'DSENDERECO', tipo:'texto', obrigatorio:false, conversao:'trim*', chave:''},
+      {col:'V', rotulo:'Numero', marcador:'@NUMERO@', tabela:'ENDERECOPARC', campo:'NRIMOVELENDERECO', tipo:'numerico', obrigatorio:false, conversao:'trim*', chave:''},
+      {col:'W', rotulo:'Nome do Bairro', marcador:'@BAIRRO@', tabela:'ENDERECOPARC', campo:'NMBAIRROENDERECO', tipo:'texto', obrigatorio:false, conversao:'trim*', chave:''},
+      {col:'X', rotulo:'CEP', marcador:'@CEP@', tabela:'ENDERECOPARC', campo:'NRCEPENDERECO', tipo:'texto', tamanho:8, obrigatorio:false, conversao:'removerMascara', chave:''},
+      {col:'Y', rotulo:'Referência do Endereço', marcador:'@REFERENCIAENDERECO@', tabela:'ENDERECOPARC', campo:'DSREFERENCIAENDE', tipo:'texto', obrigatorio:false, conversao:'trim*', chave:''},
+      {col:'Z', rotulo:'Nome Fantasia', marcador:'@NMFANTASIA@', tabela:'ESTRUTURAH', campo:'NMFANTASIA', tipo:'texto', obrigatorio:false, conversao:'trim (remove aspas e &)', chave:''},
+      {col:'AA', rotulo:'Nome Estrutura', marcador:'@NMESTRUTURA@', tabela:'ESTRUTURAM/H', campo:'NMESTRUTURAM / NMESTRUTURAH', tipo:'texto', obrigatorio:false, conversao:'trim (remove aspas e &)', chave:'', obs:'Se vazio, cai em NVL(Nome Fantasia, Razão Social).'},
+      {col:'AB', rotulo:'CPF', marcador:'@CDCPFESTRUTURA@', tabela:'ESTRUTURAH', campo:'CDCPFESTRUTURA', tipo:'texto', tamanho:11, obrigatorio:false, conversao:'removerMascara', chave:''},
+      {col:'AC', rotulo:'Data Base Sindical', marcador:'@DTBASESINDICAL@', tabela:'ESTRUTURAH', campo:'DTBASESINDICAL', tipo:'data', obrigatorio:false, conversao:'dataBR', chave:''},
+      {col:'AD', rotulo:'Cód Sindicato', marcador:'@CDSINDICAL@', tabela:'ESTRUTURAH', campo:'CDSINDICAL', tipo:'texto', obrigatorio:false, conversao:'direto (sem transformação)', chave:'FK — domínio não documentado no arquivo (hipótese a validar)'},
+      {col:'AE', rotulo:'Inserir? (condição calculada)', marcador:'—', tabela:'—', campo:'—', tipo:'flag', obrigatorio:false, conversao:'=IF(COUNTIF(Base!A:A, Nº Estrutura)=0,"insere","não")', chave:'', obs:'Controla se a linha será ou não incluída no script — reproduzido no motor pela checagem de existência.'},
+      {col:'AF1 (célula fixa)', rotulo:'Organização', marcador:'@NRORG@', tabela:'todas', campo:'NRORG', tipo:'numerico', obrigatorio:true, conversao:'—', chave:'FK', obs:'No motor genérico vem do contexto da migração, não da célula da planilha.'},
+    ],
+  },
+
+  ocupacao: {
+    id:'ocupacao', nome:'Ocupação', arquivoExemplo:'02_Ocupacao_v07.xlsx',
+    formato:'XLSX', sheetName:'Script', headerRow:2, dataStartRow:3,
+    operacoesPermitidas:['INCLUSAO','ALTERACAO','EXCLUSAO'],
+    tabelas:['GPE_OCUPACAOM','GPE_OCUPACAOH'],
+    pkGeracao:[
+      {campo:'NROCUPACAOM', tabela:'GPE_OCUPACAOM', seed:0},
+      {campo:'NROCUPACAOH', tabela:'GPE_OCUPACAOH', seed:0},
+    ],
+    dicionario:[
+      {col:'A', rotulo:'tp ocupação', marcador:'@NRTIPOOCUPACAO@', tabela:'GPE_OCUPACAOM', campo:'NRTIPOOCUPACAO', tipo:'numerico', obrigatorio:true, conversao:'—', chave:'FK'},
+      {col:'B', rotulo:'Início Vigência', marcador:'@DTINIVIGENCIA@', tabela:'GPE_OCUPACAOM', campo:'DTINIVIGENCIA', tipo:'data', obrigatorio:true, conversao:'dataBR', chave:''},
+      {col:'C', rotulo:'Fim Vigência', marcador:'@DTFIMVIGENCIA@', tabela:'GPE_OCUPACAOM', campo:'DTFIMVIGENCIA', tipo:'data', obrigatorio:false, conversao:'dataBR', chave:''},
+      {col:'D', rotulo:'Nr Ocupacao (código de integração)', marcador:'@CDINTEGRACAO@', tabela:'GPE_OCUPACAOH', campo:'CDINTEGRACAO', tipo:'texto', obrigatorio:true, conversao:'—', chave:'Identificador de negócio (usado na checagem de existência via aba HCM)'},
+      {col:'E', rotulo:'Competência', marcador:'@COMPETENCIA@', tabela:'GPE_OCUPACAOH', campo:'DTMESCOMPETENC', tipo:'data', obrigatorio:true, conversao:'dataBR', chave:''},
+      {col:'F', rotulo:'Descrição', marcador:'@NMOCUPACAOH@', tabela:'GPE_OCUPACAOH', campo:'NMOCUPACAOH', tipo:'texto', tamanho:100, obrigatorio:true, conversao:"trim (remove aspas simples)", chave:''},
+      {col:'G', rotulo:'CBO', marcador:'@NRCBO@', tabela:'GPE_OCUPACAOH', campo:'NRCBO', tipo:'numerico', tamanho:6, obrigatorio:false, conversao:"vazio => NULL; senão remove espaço/./,/-/_ e tab", chave:''},
+      {col:'I1 (célula fixa)', rotulo:'ORGANIZAÇÃO', marcador:'@NRORG@', tabela:'todas', campo:'NRORG', tipo:'numerico', obrigatorio:true, conversao:'—', chave:'FK', obs:'No motor genérico vem do contexto da migração, não da célula da planilha.'},
+    ],
+  },
+
+  escala: {
+    id:'escala', nome:'Escala de Trabalho', arquivoExemplo:'03_EscalaTrabalho_v09.xlsx',
+    formato:'XLSX', sheetName:'Dados', headerRow:2, dataStartRow:3,
+    operacoesPermitidas:['INCLUSAO','ALTERACAO','EXCLUSAO'],
+    tabelas:['GPE_ESCALATRABM','GPE_ESCALATRABH'],
+    pkGeracao:null,
+    dicionario:[
+      {col:'A', rotulo:'Início Vigência', marcador:'@DTINIVIGENCIA@', tabela:'GPE_ESCALATRABM', campo:'DTINIVIGENCIA', tipo:'data', obrigatorio:true, conversao:'dataBR', chave:''},
+      {col:'B', rotulo:'Nr Escala', marcador:'@NRESCALA@', tabela:'GPE_ESCALATRABM/H', campo:'NRESCALATRABM / NRESCALATRABH', tipo:'numerico', obrigatorio:true, conversao:'—', chave:'PK informado pelo usuário — não é gerado por sequencial (diferente de Estrutura/Ocupação).'},
+      {col:'C', rotulo:'hr semana Trab', marcador:'@QTHRSEMESCTRABH@', tabela:'GPE_ESCALATRABH', campo:'QTHRSEMESCTRABH', tipo:'numerico', obrigatorio:false, conversao:'vazio=>null; troca vírgula por ponto', chave:''},
+      {col:'D', rotulo:'Jornada Diária', marcador:'@QTHRESCALATRABH@', tabela:'GPE_ESCALATRABH', campo:'QTHRESCALATRABH', tipo:'numerico', obrigatorio:false, conversao:'vazio=>null; troca vírgula por ponto', chave:''},
+      {col:'E', rotulo:'COMPETÊNCIA', marcador:'@DTMESCOMPETENC@', tabela:'GPE_ESCALATRABH', campo:'DTMESCOMPETENC', tipo:'data', obrigatorio:true, conversao:'dataBR', chave:''},
+      {col:'F', rotulo:'Nome', marcador:'@NMESCALATRABH@', tabela:'GPE_ESCALATRABH', campo:'NMESCALATRABH', tipo:'texto', obrigatorio:true, conversao:"remove '&' e aspas simples", chave:''},
+      {col:'G', rotulo:'1ª Entrada', marcador:'@PRIENTRADA@', tabela:'GPE_ESCALATRABH', campo:'PRIENTRADA', tipo:'hora', obrigatorio:false, conversao:'trim', chave:'', obs:'Planilha original recomenda texto HH:MM mas não valida automaticamente — ponto de melhoria coberto pelo motor.'},
+      {col:'H', rotulo:'1ª Saida', marcador:'@PRISAIDA@', tabela:'GPE_ESCALATRABH', campo:'PRISAIDA', tipo:'hora', obrigatorio:false, conversao:'trim', chave:''},
+      {col:'I', rotulo:'2ª Entrada', marcador:'@SEGENTRADA@', tabela:'GPE_ESCALATRABH', campo:'SEGENTRADA', tipo:'hora', obrigatorio:false, conversao:'trim', chave:''},
+      {col:'J', rotulo:'2ª Saida', marcador:'@SEGSAIDA@', tabela:'GPE_ESCALATRABH', campo:'SEGSAIDA', tipo:'hora', obrigatorio:false, conversao:'trim', chave:''},
+      {col:'K', rotulo:'Descanso Semanal', marcador:'@DESCANSOSEMANAL@', tabela:'GPE_ESCALATRABH', campo:'DESCANSOSEMANAL', tipo:'texto', obrigatorio:false, conversao:'direto', chave:''},
+      {col:'M1 (célula fixa)', rotulo:'ORGANIZAÇÃO', marcador:'@NRORG@', tabela:'todas', campo:'NRORG', tipo:'numerico', obrigatorio:true, conversao:'—', chave:'FK', obs:'No motor genérico vem do contexto da migração, não da célula da planilha.'},
+    ],
+  },
+
+  vinculo: {
+    id:'vinculo', nome:'Vínculo', arquivoExemplo:'04_Vinculo_v26.xlsx',
+    formato:'XLSX', sheetName:'Dados', headerRow:2, dataStartRow:3,
+    operacoesPermitidas:['INCLUSAO','ALTERACAO'],
+    tabelas:['GPE_VINCULOM','GPE_VINCULOH','GPE_PESSOA','GPE_PESSOAH'],
+    pkGeracao:[{campo:'NRVINCULOM', tabela:'GPE_VINCULOM', seed:949700}],
+    simulacaoDisponivel:false,
+    dicionario:[
+      {col:'A', rotulo:'Data Admissão', marcador:'@DTADMISSAOVINC@', tabela:'GPE_VINCULOM', campo:'DTADMISSAOVINC', tipo:'data', obrigatorio:true, conversao:'dataBR', chave:''},
+      {col:'C', rotulo:'Nr. Vínculo', marcador:'@CDMATRICULA@', tabela:'GPE_VINCULOM', campo:'CDMATRICULA', tipo:'texto', obrigatorio:true, conversao:'trim', chave:'Identificador de negócio'},
+      {col:'H', rotulo:'CPF', marcador:'@CDCPFPESSOA@', tabela:'GPE_PESSOAH', campo:'NRCPFPESSOA', tipo:'texto', tamanho:11, obrigatorio:true, conversao:'removerMascara + validação de dígito verificador', chave:''},
+      {col:'—', rotulo:'(demais 220 colunas — endereço, dados bancários, PIS, CTPS, ocupação, escala etc.)', marcador:'diversos', tabela:'diversas', campo:'diversos', tipo:'—', obrigatorio:false, conversao:'—', chave:'', obs:'Detalhamento coluna-a-coluna ainda não fornecido para este template nesta rodada — dicionário parcial, pendente de validação funcional completa.'},
+    ],
+  },
+
+  esocial: {
+    id:'esocial', nome:'eSocial — Eventos (XML)', arquivoExemplo:'S-1030 / S-1200 / S-2200 / S-2205 / S-2206 / S-2210 / S-2230 / S-2240 / S-2260 / S-1005 / S-1040 / S-1210',
+    formato:'XML', operacoesPermitidas:['INCLUSAO','ALTERACAO','EXCLUSAO'],
+    tabelas:['(variável por evento)'],
+    simulacaoDisponivel:false,
+    dicionario:[
+      {col:'XPath do evento', rotulo:'Cada evento eSocial (S-1030 Cargos, S-1200 Remuneração, S-2200 Admissão, S-2205 Alteração Dados Cadastrais, S-2206 Alteração de Contrato, S-2210 CAT, S-2230 Afastamento, S-2240 Condições Ambientais, S-2260 Convocação Intermitente, S-1005 Estabelecimentos, S-1040 Cargos/Funções, S-1210 Pagamentos) possui schema próprio.', marcador:'—', tabela:'variável', campo:'variável', tipo:'XML', obrigatorio:'—', conversao:'—', chave:''},
+    ],
+    obsGeral:'Antes de gerar os INSERTs, o sistema apresenta uma pré-visualização tabular (planilha) dos dados extraídos do XML, para conferência do cliente — o mesmo motor de validação e o mesmo Script Generator são reaproveitados, apenas o adapter de leitura muda (Seção 3.1 / Anexo F do documento de especificação).',
+  },
+};
+
+// implementação de lerLinha/validarLinha/gerarInsert para Estrutura, Ocupação e Escala
+TEMPLATE_CATALOG.estrutura.lerLinha = function(row){
+  const g = c => row[decCol(c)];
+  const cnpj = CONV.removerMascara(g('F'));
+  const cei = CONV.removerMascara(g('G'));
+  const razaoSocial = CONV.trim(String(g('H')||'').replace(/['&]/g,''));
+  const nomeFantasia = CONV.trim(String(g('Z')||'').replace(/['&]/g,''));
+  const nomeEstrutura = CONV.trim(String(g('AA')||'').replace(/['&]/g,''));
+  const nmPrincipalParc = razaoSocial || nomeFantasia || nomeEstrutura || `Estrutura ${g('D')}`;
+  return {
+    NRTPESTRUTURA: g('A'), DTINIVIGENCIA: CONV.dataBR(g('B')), DTFIMVIGENCIA: CONV.dataBR(g('C')),
+    NRESTRUTURA: CONV.trim(g('D')), COMPETENCIA: CONV.dataBR(g('E')),
+    CNPJ: cnpj, CEI: cei, RAZAOSOCIAL: razaoSocial,
+    NATJURIDICA: CONV.trim(g('I')), CDCNAE: CONV.trim(g('J')), CDCAGED: CONV.trim(g('L')),
+    IDTPEMPRESA: g('M'), IDSIMPLES: CONV.vazioParaN(g('N')), IDPARTICIPAT: CONV.trim(g('O')),
+    IDENDERECO: CONV.trim(g('P')), CDPAIS: CONV.zeroEsquerda(g('Q')||'', 4), SGESTADO: CONV.trim(g('R')),
+    MUNICIPIO: CONV.upperSemAcento(g('S')), LOGRADOURO: CONV.trim(g('T')), ENDERECO: CONV.trim(g('U')),
+    NUMERO: CONV.trim(g('V')), BAIRRO: CONV.trim(g('W')), CEP: CONV.removerMascara(g('X')),
+    REFERENCIAENDERECO: CONV.trim(g('Y')), NMFANTASIA: nomeFantasia, NMESTRUTURA: nomeEstrutura,
+    NMPRINCIPALPARC: nmPrincipalParc,
+    CDCPFESTRUTURA: CONV.removerMascara(g('AB')), DTBASESINDICAL: CONV.dataBR(g('AC')), CDSINDICAL: CONV.trim(g('AD')),
+    _temEndereco: !!(CONV.trim(g('P')) && CONV.trim(g('T'))),
+  };
+};
+TEMPLATE_CATALOG.estrutura.validarLinha = function(campos, ctx){
+  const r = [];
+  if(!campos.NRESTRUTURA) r.push({sev:'erro', campo:'NRESTRUTURA', regra:'obrigatoriedade', recebido:'(vazio)', esperado:'Nº de estrutura', orientacao:'Preencha o número da estrutura.'});
+  if(!campos.DTINIVIGENCIA) r.push({sev:'erro', campo:'DTINIVIGENCIA', regra:'obrigatoriedade', recebido:'(vazio)', esperado:'data de início de vigência', orientacao:'Preencha a data de início de vigência.'});
+  if(campos.CNPJ && campos.CNPJ.length!==14) r.push({sev:'alerta', campo:'CNPJ', regra:'tamanho_cnpj', recebido:campos.CNPJ, esperado:'14 dígitos', orientacao:'Confirme o CNPJ informado.'});
+  if(campos.CNPJ) r.push({sev:'ajuste', campo:'CNPJ', regra:'remocao_mascara', recebido: '(máscara original)', esperado:'somente dígitos', orientacao:'Máscara removida automaticamente; valor original preservado no staging bruto.', ajustado:campos.CNPJ});
+  if(!campos.CDSINDICAL) r.push({sev:'recomendacao', campo:'CDSINDICAL', regra:'dominio_nao_documentado', recebido:'(vazio)', esperado:'código de sindicato válido', orientacao:'Domínio de sindicatos não documentado na planilha original — validar tabela de apoio com a equipe funcional.'});
+  const existe = ctx.baseMock.ESTRUTURAM.some(x=>x.CDINTESTRUTURA===campos.NRESTRUTURA);
+  if(existe) r.push({sev:'alerta', campo:'NRESTRUTURA', regra:'existencia_previa', recebido:campos.NRESTRUTURA, esperado:'estrutura inexistente no destino', orientacao:'Estrutura já existe no destino (equivalente ao "não" da coluna AE da planilha original) — linha não gerará INSERT.'});
+  if(campos.IDENDERECO && !campos.LOGRADOURO) r.push({sev:'alerta', campo:'LOGRADOURO', regra:'preenchimento_condicional', recebido:'(vazio)', esperado:'logradouro preenchido quando há tipo de endereço', orientacao:'Endereço não será inserido: exige tipo de endereço E logradouro preenchidos (regra AND observada na planilha).'});
+  return r;
+};
+TEMPLATE_CATALOG.estrutura.gerarInsert = function(campos, ctx, pk){
+  const partes = [];
+  partes.push(`INSERT INTO PARCNEGOCIO ( NRORG, NRPARCNEGOCIO, NMPRINCIPALPARC, NMSECUNDARIPARC, NRINSCRICAOPARC, IDATIVO, DTINCLUSAO, NRORGINCLUSAO, CDOPERINCLUSAO, CDTIPOPARCPRINCIPAL, CDTIPOINSCRICAO, IDPESSOAFISICA, IDINSTITUICAO, IDPARCFUNDIDO ) VALUES ( ${ctx.nrOrg}, ${pk.NRPARCNEGOCIO}, '${campos.NMPRINCIPALPARC}', '${campos.NMPRINCIPALPARC}', '${campos.CNPJ}', 'S', SYSDATE, ${ctx.nrOrg}, '${ctx.usuarioTecnico}', 'ESTRUTURA', 'CNPJ', 'N', 'N', 'N' );`);
+  partes.push(`INSERT INTO ESTRUTURAM ( NRORG, NRESTRUTURAM, NRPARCNEGOCIO, CDINTESTRUTURA, NRTIPOESTRUTURA, DTINIVIGENCIA, DTFIMVIGENCIA, NMESTRUTURAM, IDATIVO, DTINCLUSAO, CDOPERINCLUSAO ) VALUES ( ${ctx.nrOrg}, ${pk.NRESTRUTURAM}, ${pk.NRPARCNEGOCIO}, '${campos.NRESTRUTURA}', ${campos.NRTPESTRUTURA}, '${campos.DTINIVIGENCIA}', '${campos.DTFIMVIGENCIA}', NVL( '${campos.NMESTRUTURA}', NVL( '${campos.NMFANTASIA}', '${campos.RAZAOSOCIAL}' ) ), 'S', SYSDATE, '${ctx.usuarioTecnico}');`);
+  partes.push(`INSERT INTO ESTRUTURAH ( NRORG, NRESTRUTURAM, NRESTRUTURAH, NRPARCNEGOCIO, DTMESCOMPETENC, CDCNPJESTRUT, CDCEIESTRUT, NMRAZSOCESTRUT, NMFANTASIA, NMESTRUTURAH, CDNATUJURI, CDCNAE, NRCAGED, IDTIPOEMPR, IDOPTSIMPLES, IDPARTICIPAT, CDCPFESTRUTURA, DTBASESINDICAL, CDSINDICAL, IDATIVO, DTINCLUSAO, CDOPERINCLUSAO) VALUES ( ${ctx.nrOrg}, ${pk.NRESTRUTURAM}, ${pk.NRESTRUTURAH}, ${pk.NRPARCNEGOCIO}, '${campos.COMPETENCIA}', '${campos.CNPJ}', '${campos.CEI}', '${campos.RAZAOSOCIAL}', '${campos.NMFANTASIA}', NVL( '${campos.NMESTRUTURA}', NVL( '${campos.NMFANTASIA}', '${campos.RAZAOSOCIAL}' ) ), '${campos.NATJURIDICA}', '${campos.CDCNAE}', '${campos.CDCAGED}', '${campos.IDTPEMPRESA}', NVL( '${campos.IDSIMPLES}', 'N' ), '${campos.IDPARTICIPAT}', '${campos.CDCPFESTRUTURA}', '${campos.DTBASESINDICAL}', '${campos.CDSINDICAL}', 'S', SYSDATE, '${ctx.usuarioTecnico}');`);
+  if(campos._temEndereco){
+    partes.push(`INSERT INTO ENDERECOPARC ( NRORG, NRENDERECOPARC, NRPARCNEGOCIO, CDTIPOENDERECO, IDATIVO, DTINCLUSAO, CDOPERINCLUSAO, CDPAIS, SGESTADO, CDLOGRADOURO, NMBAIRROENDERECO, DSREFERENCIAENDE, NRCEPENDERECO, DSENDERECO, NRIMOVELENDERECO, CDMUNICIPIO ) VALUES ( ${ctx.nrOrg}, ${pk.NRENDERECOPARC}, ${pk.NRPARCNEGOCIO}, '${campos.IDENDERECO}', 'S', SYSDATE, '${ctx.usuarioTecnico}', LPAD( '${campos.CDPAIS}', 4, '0' ), '${campos.SGESTADO}', '${campos.LOGRADOURO}', '${campos.BAIRRO}', '${campos.REFERENCIAENDERECO}', '${campos.CEP}', '${campos.ENDERECO}', '${campos.NUMERO}', ( SELECT MAX( CDMUNICIPIO ) FROM MUNICIPIO WHERE UPPER( NMMUNICIPIO ) = '${campos.MUNICIPIO}' AND CDPAIS = LPAD( '${campos.CDPAIS}', 4, '0' ) AND SGESTADO = '${campos.SGESTADO}' ) );`);
+  }
+  partes.push('COMMIT;');
+  return partes.join('\n');
+};
+TEMPLATE_CATALOG.estrutura.pkFields = {PARCNEGOCIO:['NRPARCNEGOCIO'], ESTRUTURAM:['NRESTRUTURAM'], ESTRUTURAH:['NRESTRUTURAH'], ENDERECOPARC:['NRENDERECOPARC']};
+TEMPLATE_CATALOG.estrutura.baseMockSeed = {ESTRUTURAM:[{CDINTESTRUTURA:'001.058'}]};
+
+TEMPLATE_CATALOG.ocupacao.lerLinha = function(row){
+  const g = c => row[decCol(c)];
+  const cboRaw = CONV.trim(g('G'));
+  return {
+    NRTIPOOCUPACAO: g('A'), DTINIVIGENCIA: CONV.dataBR(g('B')), DTFIMVIGENCIA: CONV.dataBR(g('C')),
+    CDINTEGRACAO: CONV.trim(g('D')), COMPETENCIA: CONV.dataBR(g('E')),
+    NMOCUPACAOH: CONV.trim(String(g('F')||'').replace(/'/g,'')),
+    NRCBO: cboRaw==='' ? null : cboRaw.replace(/[\s.,\-_\t]/g,''),
+  };
+};
+TEMPLATE_CATALOG.ocupacao.validarLinha = function(campos, ctx){
+  const r = [];
+  if(!campos.CDINTEGRACAO) r.push({sev:'erro', campo:'CDINTEGRACAO', regra:'obrigatoriedade', recebido:'(vazio)', esperado:'código de integração da ocupação', orientacao:'Preencha o número/código da ocupação.'});
+  if(!campos.NMOCUPACAOH) r.push({sev:'erro', campo:'NMOCUPACAOH', regra:'obrigatoriedade', recebido:'(vazio)', esperado:'descrição da ocupação', orientacao:'Preencha a descrição.'});
+  if(campos.NRCBO && String(campos.NRCBO).length!==6) r.push({sev:'recomendacao', campo:'NRCBO', regra:'tamanho_dominio_cbo', recebido:campos.NRCBO, esperado:'6 dígitos', orientacao:'Confirme se o código CBO está completo (padrão MTE possui 6 dígitos).'});
+  const existe = ctx.baseMock.GPE_OCUPACAOH.some(x=>x.CDINTEGRACAO===campos.CDINTEGRACAO);
+  if(existe) r.push({sev:'alerta', campo:'CDINTEGRACAO', regra:'existencia_previa', recebido:campos.CDINTEGRACAO, esperado:'ocupação inexistente no destino', orientacao:'Ocupação já existe no destino (checagem equivalente à aba HCM).'});
+  return r;
+};
+TEMPLATE_CATALOG.ocupacao.gerarInsert = function(campos, ctx, pk){
+  const p1 = `INSERT INTO GPE_OCUPACAOM (NRORG, NROCUPACAOM, NRTIPOOCUPACAO, DTINIVIGENCIA, DTFIMVIGENCIA, DTINCLUSAO, NRORGINCLUSAO, CDOPERINCLUSAO) VALUES (${ctx.nrOrg}, ${pk.NROCUPACAOM}, ${campos.NRTIPOOCUPACAO}, '${campos.DTINIVIGENCIA}', '${campos.DTFIMVIGENCIA}', SYSDATE, ${ctx.nrOrg}, '${ctx.usuarioTecnico}');`;
+  const p2 = `INSERT INTO GPE_OCUPACAOH (NRORG, NROCUPACAOH, NROCUPACAOM, DTMESCOMPETENC, NMOCUPACAOH, CDINTEGRACAO, NRCBO, DTINCLUSAO, NRORGINCLUSAO, CDOPERINCLUSAO) VALUES (${ctx.nrOrg}, ${pk.NROCUPACAOH}, ${pk.NROCUPACAOM}, '${campos.COMPETENCIA}', '${campos.NMOCUPACAOH}', '${campos.CDINTEGRACAO}', ${campos.NRCBO ?? 'NULL'}, SYSDATE, ${ctx.nrOrg}, '${ctx.usuarioTecnico}' );`;
+  return [p1, p2, 'COMMIT;'].join('\n');
+};
+TEMPLATE_CATALOG.ocupacao.pkFields = {GPE_OCUPACAOM:['NROCUPACAOM'], GPE_OCUPACAOH:['NROCUPACAOH']};
+TEMPLATE_CATALOG.ocupacao.baseMockSeed = {GPE_OCUPACAOH:[{CDINTEGRACAO:'1'}]};
+
+TEMPLATE_CATALOG.escala.lerLinha = function(row){
+  const g = c => row[decCol(c)];
+  return {
+    DTINIVIGENCIA: CONV.dataBR(g('A')), NRESCALA: g('B'),
+    QTHRSEMESCTRABH: CONV.numeroDecimal(g('C')), QTHRESCALATRABH: CONV.numeroDecimal(g('D')),
+    DTMESCOMPETENC: CONV.dataBR(g('E')), NMESCALATRABH: CONV.trim(String(g('F')||'').replace(/[&']/g,'')),
+    PRIENTRADA: CONV.trim(g('G')), PRISAIDA: CONV.trim(g('H')), SEGENTRADA: CONV.trim(g('I')), SEGSAIDA: CONV.trim(g('J')),
+    DESCANSOSEMANAL: CONV.trim(g('K')),
+  };
+};
+const RE_HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
+TEMPLATE_CATALOG.escala.validarLinha = function(campos, ctx){
+  const r = [];
+  if(!campos.NRESCALA) r.push({sev:'erro', campo:'NRESCALA', regra:'obrigatoriedade', recebido:'(vazio)', esperado:'número da escala', orientacao:'Preencha o número da escala.'});
+  if(!campos.NMESCALATRABH) r.push({sev:'erro', campo:'NMESCALATRABH', regra:'obrigatoriedade', recebido:'(vazio)', esperado:'nome da escala', orientacao:'Preencha o nome/descrição da escala.'});
+  ['PRIENTRADA','PRISAIDA','SEGENTRADA','SEGSAIDA'].forEach(campo=>{
+    const v = campos[campo];
+    if(v && !RE_HORA.test(v)) r.push({sev:'alerta', campo, regra:'formato_hora', recebido:v, esperado:'HH:MM (ex.: 08:00)', orientacao:'Valor aceito, mas fora do formato recomendado HH:MM.'});
+  });
+  const existe = ctx.baseMock.GPE_ESCALATRABM.some(x=>String(x.NRESCALATRABM)===String(campos.NRESCALA));
+  if(existe) r.push({sev:'alerta', campo:'NRESCALA', regra:'existencia_previa', recebido:campos.NRESCALA, esperado:'escala inexistente no destino', orientacao:'Escala já existe no destino.'});
+  return r;
+};
+TEMPLATE_CATALOG.escala.gerarInsert = function(campos, ctx){
+  const p1 = `INSERT INTO GPE_ESCALATRABM ( NRESCALATRABM, NRORG, DTINIVIGENCIA, DTINCLUSAO, NRORGINCLUSAO, CDOPERINCLUSAO) VALUES ( ${campos.NRESCALA}, ${ctx.nrOrg}, '${campos.DTINIVIGENCIA}', SYSDATE, ${ctx.nrOrg}, '${ctx.usuarioTecnico}');`;
+  const p2 = `INSERT INTO GPE_ESCALATRABH ( NRESCALATRABH, NRESCALATRABM, NRORG, DTMESCOMPETENC, NMESCALATRABH, QTHRESCALATRABH, DTINCLUSAO, NRORGINCLUSAO, CDOPERINCLUSAO, QTHRSEMESCTRABH, PRIENTRADA, PRISAIDA, SEGENTRADA, SEGSAIDA, DESCANSOSEMANAL) VALUES ( ${campos.NRESCALA}, ${campos.NRESCALA}, ${ctx.nrOrg}, '${campos.DTMESCOMPETENC}', '${campos.NMESCALATRABH}', ${campos.QTHRESCALATRABH}, SYSDATE, ${ctx.nrOrg}, '${ctx.usuarioTecnico}', ${campos.QTHRSEMESCTRABH}, '${campos.PRIENTRADA}', '${campos.PRISAIDA}', '${campos.SEGENTRADA}', '${campos.SEGSAIDA}', '${campos.DESCANSOSEMANAL}');`;
+  return [p1, p2, 'COMMIT;'].join('\n');
+};
+TEMPLATE_CATALOG.escala.pkFields = {GPE_ESCALATRABM:['NRESCALATRABM'], GPE_ESCALATRABH:['NRESCALATRABH']};
+TEMPLATE_CATALOG.escala.baseMockSeed = {GPE_ESCALATRABM:[{NRESCALATRABM:1001}]};
+
+const SEV_META = {
+  erro: {label:'Erro impeditivo', cls:'red'},
+  alerta: {label:'Alerta', cls:'orange'},
+  recomendacao: {label:'Recomendação', cls:'blue'},
+  ajuste: {label:'Ajuste automático', cls:'teal'},
+};
+
+/* =========================================================================
+   2) TIPOS DE MIGRAÇÃO (cadastro)
+   ========================================================================= */
+let TIPOS_MIGRACAO = [
+  {
+    id:'MIG_5_TEMPLATES_INDIVIDUAL',
+    nome:'Migração HCM — 5 Templates (importação individual)',
+    descricao:'Agências, Estrutura, Ocupação, Escala e Vínculo — cada template pode ser importado de forma independente, sem sequência obrigatória travada.',
+    bancosSuportados:['ORACLE','POSTGRESQL','SQLSERVER','MYSQL'],
+    sequenciaObrigatoria:false,
+    templates:['agencias','estrutura','ocupacao','escala','vinculo'],
+  },
+  {
+    id:'MIG_HCM_ONBOARDING',
+    nome:'Migração HCM — Implantação Completa (sequência travada)',
+    descricao:'Mesmos 5 templates, mas com dependência obrigatória: Vínculo só libera após Agências + Estrutura + Ocupação + Escala.',
+    bancosSuportados:['ORACLE'],
+    sequenciaObrigatoria:true,
+    templates:['agencias','estrutura','ocupacao','escala','vinculo'],
+    dependencias:{vinculo:['agencias','estrutura','ocupacao','escala']},
+  },
+  {
+    id:'MIG_ESOCIAL_EVENTOS',
+    nome:'Importação de Eventos eSocial (XML)',
+    descricao:'Leitura de eventos eSocial (S-1030, S-1200, S-2200, S-2205, S-2206, S-2210, S-2230, S-2240, S-2260, S-1005, S-1040, S-1210) com pré-visualização tabular antes da geração dos INSERTs.',
+    bancosSuportados:['ORACLE','POSTGRESQL'],
+    sequenciaObrigatoria:false,
+    templates:['esocial'],
+  },
+];
+
+const BANCOS = [
+  {id:'ORACLE', nome:'Oracle'}, {id:'POSTGRESQL', nome:'PostgreSQL'},
+  {id:'SQLSERVER', nome:'SQL Server'}, {id:'MYSQL', nome:'MySQL'},
+];
+
+const OPERACAO_META = {
+  INCLUSAO:{label:'Inclusão', cls:'green', desc:'Gera INSERT para os registros novos.'},
+  ALTERACAO:{label:'Alteração', cls:'orange', desc:'Gera UPDATE considerando todos os campos mapeados, localizando o registro pela PK.'},
+  EXCLUSAO:{label:'Exclusão', cls:'red', desc:'Gera DELETE a partir dos números de chave (PK) informados, para qualquer entidade.'},
+};
+
+/* =========================================================================
+   3) ORGANIZAÇÕES E MIGRAÇÕES (instâncias)
+   ========================================================================= */
+const ORGANIZACOES = [
+  {id:'3260', nome:'3260 — Grupo Lallegro Industrial'},
+  {id:'1410', nome:'1410 — Rede Varejo Sul'},
+  {id:'4385', nome:'4385 — Servicos Corporativos ABC'},
+  {id:'5521', nome:'5521 — Comercio Atacadista Nordeste'},
+  {id:'6810', nome:'6810 — Grupo Educacional Vertice'},
+];
+
+const USERS = [
+  {id:'u_admin', nome:'Fernanda Rocha', papel:'administrador', orgId:null, cargo:'Administradora da Plataforma'},
+  {id:'u_op_1410', nome:'Beatriz Nunes', papel:'operador', orgId:'1410', cargo:'Operadora — Rede Varejo Sul'},
+  {id:'u_op_4385', nome:'Carlos Meireles', papel:'operador', orgId:'4385', cargo:'Operador — Servicos Corporativos ABC'},
+  {id:'u_op_5521', nome:'Ana Ferreira', papel:'operador', orgId:'5521', cargo:'Operadora — Comercio Atacadista Nordeste'},
+  {id:'u_op_6810', nome:'Diego Salgado', papel:'operador', orgId:'6810', cargo:'Operador — Grupo Educacional Vertice'},
+];
+
+const STATUS_META = {
+  'criada':{label:'Criada', cls:'gray'},
+  'aguardando arquivos':{label:'Aguardando Arquivos', cls:'blue'},
+  'em validacao':{label:'Em Validação', cls:'blue'},
+  'com inconsistencias':{label:'Com Inconsistências', cls:'orange'},
+  'aguardando aprovacao':{label:'Aguardando Aprovação', cls:'purple'},
+  'scripts gerados':{label:'Scripts Gerados', cls:'teal'},
+  'aguardando aplicacao':{label:'Aguardando Aplicação', cls:'teal'},
+  'em execucao':{label:'Em Execução', cls:'blue'},
+  'concluida':{label:'Concluída', cls:'green'},
+  'concluida alertas':{label:'Concluída com Alertas', cls:'green'},
+  'com erro':{label:'Com Erro', cls:'red'},
+  'cancelada':{label:'Cancelada', cls:'gray'},
+};
+function badge(status){ const m = STATUS_META[status]||{label:status,cls:'gray'}; return `<span class="badge ${m.cls}">${m.label}</span>`; }
+
+function novaMigracaoBase(id, orgId, tipoId, banco, operador, statusInicial){
+  const tipo = TIPOS_MIGRACAO.find(t=>t.id===tipoId);
+  const templatesState = {};
+  tipo.templates.forEach(tid=>{
+    templatesState[tid] = {status:'pendente', operacao:'INCLUSAO', arquivo:null, linhasLidas:[], validacoes:[], sqlGerado:'', jsonGerado:'', csvGerado:'', dadosAprovados:false, scriptAprovado:false, execucaoStatus:'pendente'};
+  });
+  const agora = new Date();
+  return {
+    id, org: ORGANIZACOES.find(o=>o.id===orgId), tipo, banco, operador,
+    status: statusInicial||'criada', criadoEm: agora.toLocaleString('pt-BR'), criadoEmDate: agora,
+    templatesState,
+    dadosAprovados:false, scriptsGerados:false, scriptAprovado:false,
+    execucaoProgresso:0, execucaoLog:[],
+    abaAtiva:'templates', templateAberto:null,
+    trilha:[{evento:'Migração criada', usuario:operador, data:new Date().toLocaleString('pt-BR')}],
+  };
+}
+
+let state = {
+  tela:'painel', migracaoAtualId:null, tipoEmEdicaoId:null, dictModal:null, usuario:null,
+  filtroPainel:{status:'', operador:'', banco:'', dataIni:'', dataFim:'', incluirConcluidas:false},
+};
+
+/* ---------- dados mock reutilizados para semear migracoes em diferentes estagios ---------- */
+const MOCK_LINHAS = {
+  agencias: [
+    {CDBANCO:'001', CDAGENCIA:'0019', NMAGENCIA:'0019'},
+    {CDBANCO:'033', CDAGENCIA:'0125', NMAGENCIA:'0125'},
+    {CDBANCO:'237', CDAGENCIA:'1042', NMAGENCIA:'1042'},
+  ],
+  estrutura: [
+    {NRTPESTRUTURA:5, DTINIVIGENCIA:'01/01/2000', DTFIMVIGENCIA:'', NRESTRUTURA:'001.200', COMPETENCIA:'01/01/2000',
+     CNPJ:'12345678000199', CEI:'', RAZAOSOCIAL:'COMERCIO ATACADISTA NORDESTE LTDA', NATJURIDICA:2062, CDCNAE:'4711302',
+     CDCAGED:'', IDTPEMPRESA:'OUTROS', IDSIMPLES:'N', IDPARTICIPAT:'', IDENDERECO:'', CDPAIS:'0055', SGESTADO:'PE',
+     MUNICIPIO:'RECIFE', LOGRADOURO:'', ENDERECO:'', NUMERO:'', BAIRRO:'', CEP:'', REFERENCIAENDERECO:'',
+     NMFANTASIA:'ATACADAO NORDESTE', NMESTRUTURA:'', NMPRINCIPALPARC:'COMERCIO ATACADISTA NORDESTE LTDA',
+     CDCPFESTRUTURA:'', DTBASESINDICAL:'', CDSINDICAL:'0042', _temEndereco:false},
+  ],
+  ocupacao: [
+    {NRTIPOOCUPACAO:1, DTINIVIGENCIA:'01/06/1990', DTFIMVIGENCIA:'', CDINTEGRACAO:'10', COMPETENCIA:'01/06/1990', NMOCUPACAOH:'Auxiliar de Estoque', NRCBO:'414105'},
+    {NRTIPOOCUPACAO:1, DTINIVIGENCIA:'01/06/1990', DTFIMVIGENCIA:'', CDINTEGRACAO:'11', COMPETENCIA:'01/06/1990', NMOCUPACAOH:'Conferente de Carga', NRCBO:'4141'},
+  ],
+  escala: [
+    {DTINIVIGENCIA:'07/01/2009', NRESCALA:2001, QTHRSEMESCTRABH:'44', QTHRESCALATRABH:'7.3333', DTMESCOMPETENC:'07/01/2009', NMESCALATRABH:'ADM - 08:00 A 18:00', PRIENTRADA:'08:00', PRISAIDA:'12:00', SEGENTRADA:'13:00', SEGSAIDA:'18:00', DESCANSOSEMANAL:'DOMINGO'},
+    {DTINIVIGENCIA:'07/01/2009', NRESCALA:2002, QTHRSEMESCTRABH:'44', QTHRESCALATRABH:'7.3333', DTMESCOMPETENC:'07/01/2009', NMESCALATRABH:'TURNO NOITE', PRIENTRADA:'22h', PRISAIDA:'06:00', SEGENTRADA:'', SEGSAIDA:'', DESCANSOSEMANAL:'SABADO'},
+  ],
+};
+
+// popula linhasLidas + validacoes (e, opcionalmente, scripts) de um template dentro de uma migracao,
+// reaproveitando o mesmo motor (tpl.validarLinha / tpl.gerarInsert) usado pela importacao real via upload.
+function semearTemplate(m, tid, linhas, opts){
+  opts = opts || {};
+  const tpl = TEMPLATE_CATALOG[tid];
+  const st = m.templatesState[tid];
+  st.arquivoOriginal = new File(['(conteudo de exemplo - migracao semeada para demonstracao de layout)'], tpl.arquivoExemplo, {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  st.linhasLidas = linhas;
+  const ctx = {nrOrg:m.org.id, usuarioTecnico:'000000099991', baseMock: baseMockContexto(tpl)};
+  st.validacoes = [];
+  linhas.forEach((campos, idx)=>{
+    tpl.validarLinha(campos, ctx).forEach(r=> st.validacoes.push({linha: idx + tpl.dataStartRow, ...r}));
+  });
+  st.status = st.validacoes.some(v=>v.sev==='erro') ? 'com erro' : 'validado';
+  if(opts.dadosAprovados || opts.comScript) st.dadosAprovados = true;
+  if(opts.comScript){
+    const validas = linhas.filter((_,idx)=> !st.validacoes.some(v=>v.linha===idx+tpl.dataStartRow && v.sev==='erro'));
+    st.sqlGerado = validas.map(campos=>computarInsertLinha(tpl, campos, ctx)).join('\n');
+    st.jsonGerado = JSON.stringify(st.linhasLidas, null, 2);
+    st.csvGerado = toCSV(st.linhasLidas);
+  }
+  if(opts.scriptAprovado) st.scriptAprovado = true;
+  if(opts.aplicado) st.execucaoStatus = 'aplicado';
+}
+
+let MIGRACOES = [];
+
+function inicializarMigracoesSeed(){
+  const m1 = novaMigracaoBase('MG-1001','1410','MIG_HCM_ONBOARDING','ORACLE','Beatriz Nunes','em validacao');
+  m1.criadoEmDate = new Date(Date.now() - 6*24*60*60*1000); m1.criadoEm = m1.criadoEmDate.toLocaleString('pt-BR');
+  semearTemplate(m1, 'agencias', MOCK_LINHAS.agencias.slice(0,2));
+  semearTemplate(m1, 'estrutura', MOCK_LINHAS.estrutura);
+  m1.templatesState.ocupacao.status = 'em validacao';
+  MIGRACOES.push(m1);
+
+  const m2 = novaMigracaoBase('MG-1002','4385','MIG_5_TEMPLATES_INDIVIDUAL','ORACLE','Carlos Meireles','aguardando aprovacao');
+  m2.criadoEmDate = new Date(Date.now() - 4*24*60*60*1000); m2.criadoEm = m2.criadoEmDate.toLocaleString('pt-BR');
+  semearTemplate(m2, 'agencias', MOCK_LINHAS.agencias);
+  semearTemplate(m2, 'ocupacao', MOCK_LINHAS.ocupacao);
+  semearTemplate(m2, 'escala', MOCK_LINHAS.escala);
+  m2.trilha.push({evento:'Templates validados', usuario:m2.operador, data:m2.criadoEm});
+  MIGRACOES.push(m2);
+
+  const m3 = novaMigracaoBase('MG-1003','5521','MIG_5_TEMPLATES_INDIVIDUAL','POSTGRESQL','Ana Ferreira','aguardando aplicacao');
+  m3.criadoEmDate = new Date(Date.now() - 2*24*60*60*1000); m3.criadoEm = m3.criadoEmDate.toLocaleString('pt-BR');
+  semearTemplate(m3, 'agencias', MOCK_LINHAS.agencias, {comScript:true, scriptAprovado:true});
+  semearTemplate(m3, 'estrutura', MOCK_LINHAS.estrutura, {comScript:true, scriptAprovado:true});
+  m3.dadosAprovados = true; m3.scriptsGerados = true; m3.scriptAprovado = true;
+  m3.abaAtiva = 'execucao';
+  m3.trilha.push(
+    {evento:'Templates validados', usuario:m3.operador, data:m3.criadoEm},
+    {evento:'Dados aprovados', usuario:'Ana Ferreira', data:m3.criadoEm},
+    {evento:'Scripts gerados', usuario:'Ana Ferreira', data:m3.criadoEm}
+  );
+  MIGRACOES.push(m3);
+
+  const m4 = novaMigracaoBase('MG-1004','6810','MIG_5_TEMPLATES_INDIVIDUAL','ORACLE','Diego Salgado','concluida alertas');
+  m4.criadoEmDate = new Date(Date.now() - 12*24*60*60*1000); m4.criadoEm = m4.criadoEmDate.toLocaleString('pt-BR');
+  semearTemplate(m4, 'agencias', MOCK_LINHAS.agencias, {comScript:true, scriptAprovado:true, aplicado:true});
+  semearTemplate(m4, 'ocupacao', MOCK_LINHAS.ocupacao, {comScript:true, scriptAprovado:true, aplicado:true});
+  semearTemplate(m4, 'escala', MOCK_LINHAS.escala, {comScript:true, scriptAprovado:true, aplicado:true});
+  m4.dadosAprovados = true; m4.scriptsGerados = true; m4.scriptAprovado = true;
+  m4.execucaoProgresso = 100;
+  m4.execucaoLog = m4.tipo.templates.filter(tid=>m4.templatesState[tid].sqlGerado).map(tid=>({ok:true, texto:`${TEMPLATE_CATALOG[tid].nome} - script aplicado com sucesso (${m4.templatesState[tid].linhasLidas.length} linha(s)).`}));
+  m4.abaAtiva = 'relatorio';
+  m4.trilha.push(
+    {evento:'Templates validados', usuario:m4.operador, data:m4.criadoEm},
+    {evento:'Dados aprovados', usuario:m4.operador, data:m4.criadoEm},
+    {evento:'Scripts gerados', usuario:m4.operador, data:m4.criadoEm},
+    {evento:'Aplicacao aprovada', usuario:m4.operador, data:m4.criadoEm},
+    {evento:'Migracao concluida', usuario:m4.operador, data:m4.criadoEm}
+  );
+  MIGRACOES.push(m4);
+}
+inicializarMigracoesSeed();
+
+/* =========================================================================
+   4) UTILITÁRIOS DE UI
+   ========================================================================= */
+function baixarArquivo(nome, conteudo, mime){
+  const blob = new Blob([conteudo], {type:mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = nome; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 300);
+}
+function baixarBlobOriginal(file, nome){
+  const url = URL.createObjectURL(file);
+  const a = document.createElement('a'); a.href = url; a.download = nome; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 300);
+}
+function toCSV(rows){
+  if(!rows.length) return '';
+  const cols = Object.keys(rows[0]).filter(k=>!k.startsWith('_'));
+  const lines = [cols.join(';')];
+  rows.forEach(r=> lines.push(cols.map(c=> (r[c]===undefined||r[c]===null) ? '' : String(r[c]).replace(/;/g,',')).join(';')) );
+  return lines.join('\n');
+}
+
+/* =========================================================================
+   5) RENDER: NAV
+   ========================================================================= */
+function renderTopnav(){
+  const items = [{key:'painel', label:'Painel de Migrações'}];
+  if(state.usuario.papel==='administrador'){
+    items.push({key:'templates', label:'Templates'});
+    items.push({key:'tipos', label:'Tipos de Migração'});
+    items.push({key:'operadores', label:'Operadores'});
+  }
+  document.getElementById('topnav').innerHTML =
+    items.map(i=>
+      `<div class="item ${state.tela===i.key||(state.tela==='migracao'&&i.key==='painel')?'active':''}" onclick="irPara('${i.key}')">${i.label}</div>`
+    ).join('')
+    + `<div class="item" style="margin-left:auto; opacity:.85;">${state.usuario.nome} · <span style="text-transform:capitalize;">${state.usuario.papel}</span>${state.usuario.orgId?' ('+ORGANIZACOES.find(o=>o.id===state.usuario.orgId).nome.split(' — ')[0]+')':''}</div>`
+    + `<div class="item" onclick="logout()">Sair</div>`;
+}
+function irPara(tela){
+  if(tela!=='painel' && state.usuario.papel!=='administrador') return;
+  state.tela = tela; state.migracaoAtualId=null; renderAll();
+}
+function renderAll(){
+  if(!state.usuario){
+    document.getElementById('topnav').innerHTML = '';
+    document.getElementById('content').innerHTML = USERS.length ? screenLogin() : screenPrimeiroAcesso();
+    return;
+  }
+  renderTopnav();
+  const c = document.getElementById('content');
+  if(state.tela==='painel') c.innerHTML = screenPainel();
+  else if(state.tela==='templates' && state.usuario.papel==='administrador') c.innerHTML = screenTemplatesCatalog();
+  else if(state.tela==='tipos' && state.usuario.papel==='administrador') c.innerHTML = screenTipos();
+  else if(state.tela==='operadores' && state.usuario.papel==='administrador') c.innerHTML = screenOperadores();
+  else if(state.tela==='migracao') c.innerHTML = screenMigracao();
+  else c.innerHTML = screenPainel();
+}
+function screenLogin(){
+  return `
+    <div style="max-width:420px; margin:60px auto;">
+      <div class="card">
+        <h2>Entrar na Plataforma de Migração</h2>
+        <div class="desc">Administradores enxergam todas as migrações. Operadores enxergam apenas as migrações da organização a que estão vinculados.</div>
+        <div class="field">
+          <label>Usuário (mock — sem senha real neste protótipo)</label>
+          <select id="loginUsuario">
+            ${USERS.map(u=>`<option value="${u.id}">${u.nome} — ${u.cargo}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>Senha</label><input type="text" placeholder="••••••••" value="demo"></div>
+        <div class="btnbar"><button class="btn" style="width:100%" onclick="fazerLogin()">Entrar</button></div>
+        <div style="text-align:center;margin-top:10px;"><button class="linkbtn" style="font-size:12px;" onclick="simularPrimeiroAcesso()">Simular primeiro acesso da plataforma (zerar operadores cadastrados)</button></div>
+      </div>
+    </div>
+  `;
+}
+function fazerLogin(){
+  const id = document.getElementById('loginUsuario').value;
+  state.usuario = USERS.find(u=>u.id===id);
+  state.tela = 'painel';
+  renderAll();
+}
+function logout(){
+  state.usuario = null; state.tela='painel'; state.migracaoAtualId=null;
+  renderAll();
+}
+
+/* ---------- PRIMEIRO ACESSO (bootstrap: cadastro do primeiro administrador) ---------- */
+function screenPrimeiroAcesso(){
+  return `
+    <div style="max-width:460px; margin:60px auto;">
+      <div class="card">
+        <h2>Configuração Inicial da Plataforma</h2>
+        <div class="banner info">Nenhum operador cadastrado ainda. Cadastre o primeiro administrador do sistema para começar — ele poderá, em seguida, cadastrar os demais operadores em "Operadores" no menu.</div>
+        <div class="field"><label>Nome completo</label><input type="text" id="paNome" placeholder="Ex.: Fernanda Rocha"></div>
+        <div class="field"><label>Cargo</label><input type="text" id="paCargo" placeholder="Ex.: Administradora da Plataforma"></div>
+        <div class="field"><label>E-mail</label><input type="email" id="paEmail" placeholder="nome@empresa.com"></div>
+        <div class="btnbar"><button class="btn" style="width:100%" onclick="criarPrimeiroAdministrador()">Criar administrador e entrar</button></div>
+      </div>
+    </div>
+  `;
+}
+function criarPrimeiroAdministrador(){
+  const nome = document.getElementById('paNome').value.trim();
+  const cargo = document.getElementById('paCargo').value.trim() || 'Administrador da Plataforma';
+  const email = document.getElementById('paEmail').value.trim();
+  if(!nome){ alert('Informe o nome do primeiro administrador.'); return; }
+  const u = {id:'u_'+Date.now(), nome, papel:'administrador', orgId:null, cargo, email};
+  USERS.push(u);
+  state.usuario = u; state.tela = 'painel';
+  renderAll();
+}
+function simularPrimeiroAcesso(){
+  USERS.length = 0;
+  state.usuario = null;
+  renderAll();
+}
+
+/* ---------- TELA — CADASTRO DE OPERADORES (somente administradores) ---------- */
+function screenOperadores(){
+  return `
+    <div class="card">
+      <h2>Cadastro de Operadores</h2>
+      <div class="desc">Somente administradores podem cadastrar novos operadores. Operadores ficam vinculados a uma única organização e enxergam apenas as migrações dela; administradores enxergam todas.</div>
+      <table>
+        <thead><tr><th>Nome</th><th>Cargo</th><th>Papel</th><th>Organização</th><th></th></tr></thead>
+        <tbody>
+          ${USERS.map(u=>`
+            <tr>
+              <td>${u.nome}</td>
+              <td>${u.cargo||'—'}</td>
+              <td><span class="badge ${u.papel==='administrador'?'purple':'blue'}">${u.papel==='administrador'?'Administrador':'Operador'}</span></td>
+              <td>${u.orgId ? ((ORGANIZACOES.find(o=>o.id===u.orgId)||{}).nome||'—') : 'Todas (administrador)'}</td>
+              <td>${u.id===state.usuario.id ? '<span class="hint">você</span>' : `<button class="btn secondary small" onclick="removerOperador('${u.id}')">Remover</button>`}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+      <div class="btnbar"><button class="btn" onclick="abrirNovoOperador()">+ Novo operador</button></div>
+    </div>
+    <div class="card" id="novoOperadorForm" style="display:none;"></div>
+  `;
+}
+function abrirNovoOperador(){
+  const el = document.getElementById('novoOperadorForm');
+  el.style.display = el.style.display==='none' ? 'block' : 'none';
+  el.innerHTML = `
+    <h2>Novo Operador</h2>
+    <div class="grid2">
+      <div class="field"><label>Nome completo</label><input type="text" id="opNome" placeholder="Ex.: João Alberto"></div>
+      <div class="field"><label>Cargo</label><input type="text" id="opCargo" placeholder="Ex.: Operador — Migrações"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Papel</label>
+        <select id="opPapel" onchange="toggleOrgOperador()">
+          <option value="operador">Operador (vinculado a uma organização)</option>
+          <option value="administrador">Administrador (acesso a todas as organizações)</option>
+        </select>
+      </div>
+      <div class="field" id="opOrgField"><label>Organização vinculada</label>
+        <select id="opOrg"><option value="">Selecione…</option>${ORGANIZACOES.map(o=>`<option value="${o.id}">${o.nome}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="btnbar"><button class="btn" onclick="salvarNovoOperador()">Salvar operador</button></div>
+  `;
+}
+function toggleOrgOperador(){
+  const papel = document.getElementById('opPapel').value;
+  document.getElementById('opOrgField').style.display = papel==='administrador' ? 'none' : 'block';
+}
+function salvarNovoOperador(){
+  const nome = document.getElementById('opNome').value.trim();
+  const cargo = document.getElementById('opCargo').value.trim();
+  const papel = document.getElementById('opPapel').value;
+  const orgId = papel==='administrador' ? null : document.getElementById('opOrg').value;
+  if(!nome || (papel==='operador' && !orgId)){ alert('Preencha nome e, para operadores, a organização vinculada.'); return; }
+  USERS.push({id:'u_'+Date.now(), nome, papel, orgId, cargo: cargo || (papel==='administrador' ? 'Administrador da Plataforma' : 'Operador')});
+  document.getElementById('novoOperadorForm').style.display = 'none';
+  document.getElementById('content').innerHTML = screenOperadores();
+}
+function removerOperador(id){
+  const u = USERS.find(x=>x.id===id);
+  if(!u) return;
+  if(u.papel==='administrador' && USERS.filter(x=>x.papel==='administrador').length<=1){
+    alert('Não é possível remover o único administrador restante.'); return;
+  }
+  const idx = USERS.findIndex(x=>x.id===id);
+  USERS.splice(idx,1);
+  document.getElementById('content').innerHTML = screenOperadores();
+}
+
+/* =========================================================================
+   6) TELA — PAINEL DE MIGRAÇÕES
+   ========================================================================= */
+function migracoesVisiveis(){
+  return state.usuario.papel==='administrador' ? MIGRACOES : MIGRACOES.filter(m=>m.org.id===state.usuario.orgId);
+}
+function migracoesFiltradas(){
+  const f = state.filtroPainel;
+  let list = migracoesVisiveis();
+  if(!f.incluirConcluidas) list = list.filter(m=>!['concluida','concluida alertas','cancelada'].includes(m.status));
+  if(f.status) list = list.filter(m=>m.status===f.status);
+  if(f.operador) list = list.filter(m=>m.operador===f.operador);
+  if(f.banco) list = list.filter(m=>m.banco===f.banco);
+  if(f.dataIni) list = list.filter(m=>m.criadoEmDate >= new Date(f.dataIni+'T00:00:00'));
+  if(f.dataFim) list = list.filter(m=>m.criadoEmDate <= new Date(f.dataFim+'T23:59:59'));
+  return list.slice().sort((a,b)=> b.criadoEmDate - a.criadoEmDate);
+}
+function aplicarFiltrosPainel(){
+  state.filtroPainel = {
+    status: document.getElementById('fltStatus').value,
+    operador: document.getElementById('fltOperador').value,
+    banco: document.getElementById('fltBanco').value,
+    dataIni: document.getElementById('fltDataIni').value,
+    dataFim: document.getElementById('fltDataFim').value,
+    incluirConcluidas: document.getElementById('fltIncluirConcluidas').checked,
+  };
+  renderAll();
+}
+function limparFiltrosPainel(){
+  state.filtroPainel = {status:'', operador:'', banco:'', dataIni:'', dataFim:'', incluirConcluidas:false};
+  renderAll();
+}
+function renderFiltrosPainel(){
+  const f = state.filtroPainel;
+  const operadores = [...new Set(migracoesVisiveis().map(m=>m.operador))].sort();
+  return `
+    <div class="card">
+      <h3 style="margin-top:0;">Filtros</h3>
+      <div class="grid2">
+        <div class="field"><label>Status</label>
+          <select id="fltStatus" onchange="aplicarFiltrosPainel()">
+            <option value="">Todos</option>
+            ${Object.keys(STATUS_META).map(s=>`<option value="${s}" ${f.status===s?'selected':''}>${STATUS_META[s].label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>Operador</label>
+          <select id="fltOperador" onchange="aplicarFiltrosPainel()">
+            <option value="">Todos</option>
+            ${operadores.map(o=>`<option value="${o}" ${f.operador===o?'selected':''}>${o}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Banco de destino</label>
+          <select id="fltBanco" onchange="aplicarFiltrosPainel()">
+            <option value="">Todos</option>
+            ${BANCOS.map(b=>`<option value="${b.id}" ${f.banco===b.id?'selected':''}>${b.nome}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>Período (criada em)</label>
+          <div style="display:flex; gap:8px;">
+            <input type="date" id="fltDataIni" value="${f.dataIni}" onchange="aplicarFiltrosPainel()">
+            <input type="date" id="fltDataFim" value="${f.dataFim}" onchange="aplicarFiltrosPainel()">
+          </div>
+        </div>
+      </div>
+      <div class="checkline"><input type="checkbox" id="fltIncluirConcluidas" ${f.incluirConcluidas?'checked':''} onchange="aplicarFiltrosPainel()"> Incluir migrações concluídas/canceladas</div>
+      <div class="btnbar"><button class="btn secondary small" onclick="limparFiltrosPainel()">Limpar filtros</button></div>
+    </div>
+  `;
+}
+function screenPainel(){
+  const visiveis = migracoesFiltradas();
+  return `
+    ${renderFiltrosPainel()}
+    <div class="card">
+      <h2>Painel de Migrações</h2>
+      <div class="desc">
+        ${state.usuario.papel==='administrador'
+          ? 'Visão de administrador — todas as organizações. Cada linha é uma migração; a borda colorida e os contadores refletem o resultado da validação.'
+          : `Visão de operador — exibindo apenas migrações da organização vinculada ao seu usuário (${ORGANIZACOES.find(o=>o.id===state.usuario.orgId).nome}).`}
+        Por padrão são exibidas apenas migrações ainda não concluídas — use os filtros acima para localizar outras. Downloads disponíveis já refletem o status atual (Seção 4.1 / Anexo A do documento de especificação — uma organização não pode ter mais de uma migração ativa simultaneamente).
+      </div>
+      ${visiveis.map(m=>renderMigCard(m)).join('') || '<p class="hint">Nenhuma migração encontrada para os filtros selecionados.</p>'}
+      <div class="btnbar"><button class="btn" onclick="abrirNovaMigracao()">+ Nova migração</button></div>
+    </div>
+    <div class="card" id="formNovaMigracao" style="display:none;">${formNovaMigracao()}</div>
+  `;
+}
+function renderMigCard(m){
+  const scriptsOk = Object.values(m.templatesState).some(t=>t.sqlGerado);
+  const validadosOk = Object.values(m.templatesState).some(t=>t.jsonGerado);
+  let erros=0, alertas=0;
+  Object.values(m.templatesState).forEach(st=>{
+    (st.validacoes||[]).forEach(v=>{ if(v.sev==='erro') erros++; else if(v.sev==='alerta') alertas++; });
+  });
+  const algumValidado = Object.values(m.templatesState).some(t=>t.linhasLidas && t.linhasLidas.length);
+  const corBorda = erros>0 ? 'var(--red)' : alertas>0 ? 'var(--orange)' : algumValidado ? 'var(--green)' : 'var(--border)';
+  return `
+    <div class="mig-card" style="border-left:4px solid ${corBorda};">
+      <div class="org">${m.org.nome}<br><small class="hint">${m.id} · ${m.tipo.nome}</small></div>
+      <div class="info">
+        Banco: <b>${m.banco}</b> · Operador: ${m.operador} · Criada em: ${m.criadoEm} · Status: ${badge(m.status)}
+        ${erros>0 ? `<br><span class="badge red">${erros} erro(s) pendente(s)</span>` : ''}
+        ${alertas>0 ? ` <span class="badge orange">${alertas} alerta(s)</span>` : ''}
+        ${erros===0 && algumValidado ? ` <span class="badge green">Validação OK</span>` : ''}
+      </div>
+      <div class="dl">
+        <button class="btn secondary small" onclick="abrirMigracao('${m.id}')">Abrir</button>
+        ${scriptsOk ? `<button class="btn secondary small" onclick="baixarTudoSQL('${m.id}')">.sql</button>` : ''}
+        ${validadosOk ? `<button class="btn secondary small" onclick="baixarTudoJSON('${m.id}')">.json</button>` : ''}
+        ${validadosOk ? `<button class="btn secondary small" onclick="baixarTudoCSV('${m.id}')">.csv</button>` : ''}
+      </div>
+    </div>`;
+}
+function abrirNovaMigracao(){
+  const el = document.getElementById('formNovaMigracao');
+  el.style.display = el.style.display==='none' ? 'block':'none';
+  el.innerHTML = formNovaMigracao();
+}
+function formNovaMigracao(){
+  return `
+    <h2>Criar Nova Migração</h2>
+    <div class="desc">Organização → Tipo de Migração → Banco de Destino → Operador responsável.</div>
+    <div class="grid2">
+      <div class="field"><label>Organização</label>
+        <select id="nmOrg" ${state.usuario.papel!=='administrador'?'disabled':''}>
+          <option value="">Selecione…</option>${ORGANIZACOES.filter(o=> state.usuario.papel==='administrador' || o.id===state.usuario.orgId).map(o=>{
+          const ativa = MIGRACOES.some(m=>m.org.id===o.id && !['concluida','concluida alertas','cancelada','com erro'].includes(m.status));
+          return `<option value="${o.id}" ${ativa?'disabled':''} ${state.usuario.papel!=='administrador'?'selected':''}>${o.nome}${ativa?' (migração ativa — bloqueado)':''}</option>`;
+        }).join('')}</select>
+        ${state.usuario.papel!=='administrador' ? `<small class="hint">Seu usuário está vinculado a esta organização.</small><input type="hidden" id="nmOrgFixo" value="${state.usuario.orgId}">` : ''}
+      </div>
+      <div class="field"><label>Tipo de Migração</label>
+        <select id="nmTipo" onchange="atualizarBancosCompativeis()">
+          <option value="">Selecione…</option>${TIPOS_MIGRACAO.map(t=>`<option value="${t.id}">${t.nome}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Banco de Destino</label><select id="nmBanco"><option value="">Selecione um tipo de migração primeiro…</option></select></div>
+      <div class="field"><label>Operador responsável</label><input type="text" id="nmOperador" placeholder="Nome do operador"></div>
+    </div>
+    <div class="banner info">Ao confirmar, o sistema cria a migração com todos os templates do tipo selecionado em status "pendente", disponíveis para importação (individual ou sequencial, conforme configuração do tipo).</div>
+    <div class="btnbar"><button class="btn" onclick="criarMigracao()">Criar migração</button></div>
+  `;
+}
+function atualizarBancosCompativeis(){
+  const tipoId = document.getElementById('nmTipo').value;
+  const sel = document.getElementById('nmBanco');
+  const tipo = TIPOS_MIGRACAO.find(t=>t.id===tipoId);
+  sel.innerHTML = tipo ? tipo.bancosSuportados.map(b=>`<option value="${b}">${BANCOS.find(x=>x.id===b).nome}</option>`).join('') : '<option value="">—</option>';
+}
+function criarMigracao(){
+  let orgId = document.getElementById('nmOrg').value;
+  if(state.usuario.papel!=='administrador') orgId = state.usuario.orgId; // reforca no "servidor" (aqui, no proprio motor) a restricao ja aplicada na UI
+  const tipoId = document.getElementById('nmTipo').value;
+  const banco = document.getElementById('nmBanco').value;
+  const operador = document.getElementById('nmOperador').value;
+  if(!orgId||!tipoId||!banco||!operador){ alert('Preencha organização, tipo de migração, banco de destino e operador.'); return; }
+  const id = 'MG-' + (1000 + MIGRACOES.length + 1);
+  const m = novaMigracaoBase(id, orgId, tipoId, banco, operador, 'aguardando arquivos');
+  MIGRACOES.push(m);
+  state.migracaoAtualId = id; state.tela='migracao';
+  renderAll();
+}
+function abrirMigracao(id){
+  const m = MIGRACOES.find(x=>x.id===id);
+  if(!m){ return; }
+  if(state.usuario.papel!=='administrador' && m.org.id!==state.usuario.orgId){
+    alert('Seu usuário não tem acesso a migrações de outra organização.'); return;
+  }
+  state.migracaoAtualId = id; state.tela='migracao'; renderAll();
+}
+
+function baixarTudoSQL(id){
+  const m = MIGRACOES.find(x=>x.id===id);
+  const sql = Object.values(m.templatesState).filter(t=>t.sqlGerado).map(t=>t.sqlGerado).join('\n\n');
+  baixarArquivo(`${id}_scripts.sql`, sql || '-- nenhum script gerado ainda', 'application/sql');
+}
+function baixarTudoJSON(id){
+  const m = MIGRACOES.find(x=>x.id===id);
+  const obj = {}; Object.entries(m.templatesState).forEach(([k,v])=> obj[k]=v.linhasLidas);
+  baixarArquivo(`${id}_dados.json`, JSON.stringify(obj,null,2), 'application/json');
+}
+function baixarTudoCSV(id){
+  const m = MIGRACOES.find(x=>x.id===id);
+  Object.entries(m.templatesState).forEach(([k,v])=>{
+    if(v.linhasLidas && v.linhasLidas.length) baixarArquivo(`${id}_${k}.csv`, toCSV(v.linhasLidas), 'text/csv');
+  });
+}
+
+/* =========================================================================
+   7) TELA — TIPOS DE MIGRAÇÃO (cadastro)
+   ========================================================================= */
+function screenTipos(){
+  return `
+    <div class="card">
+      <h2>Cadastro de Tipos de Migração</h2>
+      <div class="desc">Um tipo de migração define quais templates entram, em que ordem (com ou sem bloqueio de sequência), quais operações são permitidas e quais bancos de destino são suportados.</div>
+      ${TIPOS_MIGRACAO.map(t=>`
+        <div class="tpl-catalog-card">
+          <div class="head">
+            <div><b>${t.nome}</b><br><small class="hint">${t.descricao}</small></div>
+            <button class="btn secondary small" onclick="verDetalheTipo('${t.id}')">Ver templates</button>
+          </div>
+          <div class="metabadges">
+            <span class="badge ${t.sequenciaObrigatoria?'orange':'green'}">${t.sequenciaObrigatoria?'Sequência obrigatória':'Importação individual permitida'}</span>
+            ${t.bancosSuportados.map(b=>`<span class="badge gray">${BANCOS.find(x=>x.id===b).nome}</span>`).join('')}
+            <span class="badge blue">${t.templates.length} template(s)</span>
+          </div>
+        </div>
+      `).join('')}
+      <div class="btnbar"><button class="btn" onclick="abrirNovoTipo()">+ Criar novo tipo de migração</button></div>
+    </div>
+    <div class="card" id="detalheTipo"></div>
+    <div class="card" id="novoTipoForm" style="display:none;"></div>
+  `;
+}
+function verDetalheTipo(id){
+  const t = TIPOS_MIGRACAO.find(x=>x.id===id);
+  document.getElementById('detalheTipo').innerHTML = `
+    <h2>${t.nome}</h2>
+    <div class="desc">Templates configurados, na ordem definida. Clique em "Dicionário de dados" para ver o mapeamento coluna → tabela.campo.</div>
+    <table>
+      <thead><tr><th>Ordem</th><th>Template</th><th>Formato</th><th>Tabelas de destino</th><th>Operações permitidas</th><th>Depende de</th><th></th></tr></thead>
+      <tbody>
+        ${t.templates.map((tid,i)=>{
+          const tpl = TEMPLATE_CATALOG[tid];
+          const deps = (t.dependencias && t.dependencias[tid]) ? t.dependencias[tid].map(d=>TEMPLATE_CATALOG[d].nome).join(', ') : '—';
+          return `<tr>
+            <td>${i+1}</td>
+            <td><b>${tpl.nome}</b></td>
+            <td><span class="badge gray">${tpl.formato}</span></td>
+            <td class="mono">${tpl.tabelas.join(', ')}</td>
+            <td>${tpl.operacoesPermitidas.map(op=>`<span class="badge ${OPERACAO_META[op].cls}">${OPERACAO_META[op].label}</span>`).join(' ')}</td>
+            <td>${deps}</td>
+            <td><button class="btn secondary small" onclick="abrirDicionario('${tid}')">Dicionário de dados</button></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    <div id="dicionarioArea"></div>
+  `;
+}
+function abrirDicionario(tid){
+  const tpl = TEMPLATE_CATALOG[tid];
+  document.getElementById('dicionarioArea').innerHTML = `
+    <h3>Dicionário de Dados — ${tpl.nome}</h3>
+    <div class="desc">${tpl.formato==='XLSX' ? `Aba/planilha: <b>${tpl.sheetName}</b> · Linha de cabeçalho: <b>${tpl.headerRow}</b> · Início dos dados: <b>linha ${tpl.dataStartRow}</b>` : (tpl.obsGeral||'')}</div>
+    ${tpl.pkGeracao ? `<div class="banner info">Geração automática de chave (equivalente a NOVOCODIGO): ${tpl.pkGeracao.map(p=>`<b>${p.campo}</b> (tabela ${p.tabela}, próximo livre a partir de ${p.seed})`).join('; ')}.</div>` : ''}
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>Coluna origem</th><th>Rótulo</th><th>Marcador</th><th>Tabela destino</th><th>Campo destino</th><th>Tipo</th><th>Obrigatório</th><th>Conversão</th><th>Chave</th></tr></thead>
+        <tbody>
+          ${tpl.dicionario.map(d=>`
+            <tr>
+              <td class="mono">${d.col}</td>
+              <td>${d.rotulo}${d.obs?`<br><small class="hint">${d.obs}</small>`:''}</td>
+              <td class="mono">${d.marcador}</td>
+              <td class="mono">${d.tabela}</td>
+              <td class="mono">${d.campo}</td>
+              <td>${d.tipo}${d.tamanho?` (${d.tamanho})`:''}</td>
+              <td>${d.obrigatorio===true?'<span class="badge red">Sim</span>':d.obrigatorio===false?'<span class="badge gray">Não</span>':'—'}</td>
+              <td>${d.conversao}</td>
+              <td>${d.chave||'—'}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+function abrirNovoTipo(){
+  const el = document.getElementById('novoTipoForm');
+  el.style.display = el.style.display==='none'?'block':'none';
+  el.innerHTML = `
+    <h2>Criar Novo Tipo de Migração</h2>
+    <div class="desc">Monte um novo tipo combinando templates já existentes no catálogo. Nenhum código é necessário — apenas configuração.</div>
+    <div class="grid2">
+      <div class="field"><label>Nome do tipo de migração</label><input type="text" id="ntNome" placeholder="Ex.: Atualização Cadastral Mensal"></div>
+      <div class="field"><label>Sequência obrigatória entre templates?</label>
+        <select id="ntSeq"><option value="nao">Não — cada template importável individualmente</option><option value="sim">Sim — respeitar ordem/dependência</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Bancos de destino suportados</label>
+      <div class="pill-tabs">${BANCOS.map(b=>`<label class="pill" style="cursor:pointer;"><input type="checkbox" value="${b.id}" class="ntBanco" style="margin-right:6px;">${b.nome}</label>`).join('')}</div>
+    </div>
+    <div class="field"><label>Templates incluídos (ordem = ordem de marcação)</label>
+      <div>${Object.values(TEMPLATE_CATALOG).map(t=>`<label class="checkline"><input type="checkbox" value="${t.id}" class="ntTemplate">${t.nome} <span class="badge gray">${t.formato}</span></label>`).join('')}</div>
+    </div>
+    <div class="btnbar"><button class="btn" onclick="salvarNovoTipo()">Salvar tipo de migração</button></div>
+  `;
+}
+function salvarNovoTipo(){
+  const nome = document.getElementById('ntNome').value;
+  const seq = document.getElementById('ntSeq').value==='sim';
+  const bancos = Array.from(document.querySelectorAll('.ntBanco:checked')).map(x=>x.value);
+  const templates = Array.from(document.querySelectorAll('.ntTemplate:checked')).map(x=>x.value);
+  if(!nome || !bancos.length || !templates.length){ alert('Preencha nome, ao menos um banco e ao menos um template.'); return; }
+  const id = 'TIPO_'+Date.now();
+  TIPOS_MIGRACAO.push({id, nome, descricao:'Tipo criado via cadastro no protótipo.', bancosSuportados:bancos, sequenciaObrigatoria:seq, templates});
+  document.getElementById('novoTipoForm').style.display='none';
+  document.getElementById('content').innerHTML = screenTipos();
+}
+
+/* =========================================================================
+   7.5) TELA — CATÁLOGO DE TEMPLATES (criar template + editar dicionário de dados)
+   ========================================================================= */
+function screenTemplatesCatalog(){
+  return `
+    <div class="card">
+      <h2>Catálogo de Templates</h2>
+      <div class="desc">Um template descreve um contexto migrável (uma planilha, um conjunto de eventos XML etc.). Crie um novo template e depois monte seu dicionário de dados campo a campo — sem necessidade de código (Seção 2 do documento de especificação).</div>
+      ${Object.values(TEMPLATE_CATALOG).map(t=>`
+        <div class="tpl-catalog-card">
+          <div class="head">
+            <div><b>${t.nome}</b> ${t._criadoViaCadastro?'<span class="badge purple">Criado via cadastro</span>':''}<br><small class="hint">${t.arquivoExemplo}</small></div>
+            <button class="btn secondary small" onclick="abrirDicionarioCatalogo('${t.id}')">Dicionário de dados</button>
+          </div>
+          <div class="metabadges">
+            <span class="badge gray">${t.formato}</span>
+            ${(t.tabelas||[]).map(tb=>`<span class="badge blue">${tb}</span>`).join('')}
+            ${t.operacoesPermitidas.map(op=>`<span class="badge ${OPERACAO_META[op].cls}">${OPERACAO_META[op].label}</span>`).join('')}
+            ${t.simulacaoDisponivel===false?'<span class="badge orange">Simulação parcial</span>':'<span class="badge green">Simulação disponível</span>'}
+          </div>
+        </div>
+      `).join('')}
+      <div class="btnbar"><button class="btn" onclick="abrirNovoTemplateForm()">+ Criar novo template</button></div>
+    </div>
+    <div class="card" id="dicionarioCatalogoArea"></div>
+    <div class="card" id="novoTemplateForm" style="display:none;"></div>
+  `;
+}
+function abrirNovoTemplateForm(){
+  const el = document.getElementById('novoTemplateForm');
+  el.style.display = el.style.display==='none' ? 'block' : 'none';
+  el.innerHTML = `
+    <h2>Criar Novo Template</h2>
+    <div class="desc">Templates criados aqui usam o motor genérico orientado por metadados: leitura, validação de obrigatoriedade/tamanho e geração de INSERT funcionam automaticamente a partir do dicionário de dados que você montar a seguir.</div>
+    <div class="grid2">
+      <div class="field"><label>Nome do template</label><input type="text" id="ntplNome" placeholder="Ex.: Sindicatos"></div>
+      <div class="field"><label>Formato de entrada</label>
+        <select id="ntplFormato" onchange="document.getElementById('ntplXlsxOpts').style.display=this.value==='XLSX'?'block':'none'">
+          <option value="XLSX">XLSX</option><option value="XML">XML</option>
+        </select>
+      </div>
+    </div>
+    <div id="ntplXlsxOpts" class="grid3">
+      <div class="field"><label>Nome da aba/planilha</label><input type="text" id="ntplSheet" placeholder="Ex.: Dados" value="Dados"></div>
+      <div class="field"><label>Linha do cabeçalho</label><input type="number" id="ntplHeaderRow" value="1"></div>
+      <div class="field"><label>Linha de início dos dados</label><input type="number" id="ntplDataRow" value="2"></div>
+    </div>
+    <div class="field"><label>Arquivo de exemplo (apenas referência, texto livre)</label><input type="text" id="ntplArquivo" placeholder="Ex.: 06_Sindicatos_v01.xlsx"></div>
+    <div class="field"><label>Operações permitidas</label>
+      <div class="pill-tabs">
+        <label class="pill"><input type="checkbox" value="INCLUSAO" class="ntplOp" checked style="margin-right:6px;">Inclusão</label>
+        <label class="pill"><input type="checkbox" value="ALTERACAO" class="ntplOp" style="margin-right:6px;">Alteração</label>
+        <label class="pill"><input type="checkbox" value="EXCLUSAO" class="ntplOp" style="margin-right:6px;">Exclusão</label>
+      </div>
+    </div>
+    <div class="field">
+      <label>Template de script SQL (opcional — com marcadores @CAMPO@, no mesmo padrão das planilhas originais)</label>
+      <textarea id="ntplScriptTemplate" rows="4" placeholder="INSERT INTO SINDICATO ( NRORG, CDSINDICATO, NMSINDICATO ) VALUES ( @NRORG@, '@CDSINDICATO@', '@NMSINDICATO@' );"></textarea>
+      <small class="hint">Se preenchido, o motor faz substituição de marcador (mais fiel ao padrão real). Se deixado em branco, o sistema monta um INSERT genérico automaticamente a partir do dicionário de dados.</small>
+    </div>
+    <div class="banner info">Depois de salvar, adicione os campos do dicionário de dados (coluna → tabela.campo) na tela seguinte — os marcadores usados aqui precisam bater com o marcador definido em cada campo do dicionário.</div>
+    <div class="btnbar"><button class="btn" onclick="salvarNovoTemplate()">Salvar template</button></div>
+  `;
+}
+function salvarNovoTemplate(){
+  const nome = document.getElementById('ntplNome').value;
+  const formato = document.getElementById('ntplFormato').value;
+  const arquivoExemplo = document.getElementById('ntplArquivo').value || (nome+'.xlsx');
+  const operacoesPermitidas = Array.from(document.querySelectorAll('.ntplOp:checked')).map(x=>x.value);
+  if(!nome || !operacoesPermitidas.length){ alert('Preencha o nome e ao menos uma operação permitida.'); return; }
+  const id = 'tpl_'+Date.now();
+  const novoTpl = {
+    id, nome, arquivoExemplo, formato,
+    sheetName: document.getElementById('ntplSheet') ? document.getElementById('ntplSheet').value : undefined,
+    headerRow: document.getElementById('ntplHeaderRow') ? Number(document.getElementById('ntplHeaderRow').value) : undefined,
+    dataStartRow: document.getElementById('ntplDataRow') ? Number(document.getElementById('ntplDataRow').value) : undefined,
+    operacoesPermitidas, tabelas:[], pkGeracao:null, dicionario:[], _criadoViaCadastro:true,
+    scriptTemplateManual: (document.getElementById('ntplScriptTemplate') && document.getElementById('ntplScriptTemplate').value.trim()) || null,
+  };
+  novoTpl.lerLinha = (row) => lerLinhaGenerica(novoTpl, row);
+  novoTpl.validarLinha = (campos, ctx) => validarLinhaGenerica(novoTpl, campos);
+  novoTpl.gerarInsert = (campos, ctx, pk) => gerarInsertGenerica(novoTpl, campos, ctx, pk);
+  TEMPLATE_CATALOG[id] = novoTpl;
+  document.getElementById('novoTemplateForm').style.display = 'none';
+  document.getElementById('content').innerHTML = screenTemplatesCatalog();
+  abrirDicionarioCatalogo(id);
+}
+function abrirDicionarioCatalogo(tid){
+  const tpl = TEMPLATE_CATALOG[tid];
+  document.getElementById('dicionarioCatalogoArea').innerHTML = `
+    <h3>Dicionário de Dados — ${tpl.nome}</h3>
+    <div class="desc">${tpl.formato==='XLSX' ? `Aba/planilha: <b>${tpl.sheetName||'—'}</b> · Linha de cabeçalho: <b>${tpl.headerRow||'—'}</b> · Início dos dados: <b>linha ${tpl.dataStartRow||'—'}</b>` : (tpl.obsGeral||'Formato XML — mapeamento por XPath do evento.')}</div>
+    ${tpl.pkGeracao ? `<div class="banner info">Geração automática de chave: ${tpl.pkGeracao.map(p=>`<b>${p.campo}</b> (tabela ${p.tabela}, próximo livre a partir de ${p.seed})`).join('; ')}.</div>` : ''}
+    <div class="banner ${tpl.scriptTemplateManual?'ok':'warn'}">
+      ${tpl.scriptTemplateManual
+        ? 'Este template usa um script SQL manual com marcadores @CAMPO@ — os marcadores abaixo controlam exatamente o que é substituído na geração do INSERT.'
+        : 'Este template ainda não tem um script SQL manual definido — o motor genérico monta o INSERT automaticamente a partir das linhas abaixo (tabela.campo).'}
+      <button class="linkbtn" style="margin-left:10px;" onclick="toggleEditScriptTemplate('${tid}')">Editar template de script</button>
+    </div>
+    <div id="editScriptTemplate_${tid}"></div>
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>Coluna origem</th><th>Rótulo</th><th>Marcador</th><th>Tabela destino</th><th>Campo destino</th><th>Tipo</th><th>Obrigatório</th><th>Conversão</th><th>Chave</th></tr></thead>
+        <tbody>
+          ${tpl.dicionario.map(d=>`
+            <tr>
+              <td class="mono">${d.col}</td>
+              <td>${d.rotulo}${d.obs?`<br><small class="hint">${d.obs}</small>`:''}</td>
+              <td class="mono">${d.marcador||'—'}</td>
+              <td class="mono">${d.tabela}</td>
+              <td class="mono">${d.campo}</td>
+              <td>${d.tipo}${d.tamanho?` (${d.tamanho})`:''}</td>
+              <td>${d.obrigatorio===true?'<span class="badge red">Sim</span>':d.obrigatorio===false?'<span class="badge gray">Não</span>':'—'}</td>
+              <td>${d.conversao}</td>
+              <td>${d.chave||'—'}</td>
+            </tr>`).join('') || '<tr><td colspan="9">Nenhum campo cadastrado ainda — use "Adicionar campo" abaixo.</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+    <div id="formCampoDicionario_${tid}"></div>
+    <div class="btnbar"><button class="btn secondary" onclick="toggleFormCampo('${tid}')">+ Adicionar campo ao dicionário</button></div>
+  `;
+}
+function toggleFormCampo(tid){
+  const el = document.getElementById('formCampoDicionario_'+tid);
+  if(el.innerHTML.trim()!==''){ el.innerHTML=''; return; }
+  el.innerHTML = `
+    <h3>Novo campo do dicionário</h3>
+    <div class="grid3">
+      <div class="field"><label>Coluna de origem (ex.: A, B, AK — ou "D1" para célula fixa)</label><input type="text" id="cdCol" placeholder="A"></div>
+      <div class="field"><label>Rótulo (linha de cabeçalho)</label><input type="text" id="cdRotulo" placeholder="Ex.: Código do Sindicato"></div>
+      <div class="field"><label>Marcador (@CAMPO@)</label><input type="text" id="cdMarcador" placeholder="@CDSINDICATO@"></div>
+    </div>
+    <div class="grid3">
+      <div class="field"><label>Tabela de destino</label><input type="text" id="cdTabela" placeholder="Ex.: SINDICATO"></div>
+      <div class="field"><label>Campo de destino</label><input type="text" id="cdCampo" placeholder="Ex.: CDSINDICATO"></div>
+      <div class="field"><label>Tipo</label>
+        <select id="cdTipo"><option value="texto">Texto</option><option value="numerico">Numérico</option><option value="data">Data</option><option value="hora">Hora</option><option value="monetario">Monetário</option><option value="percentual">Percentual</option><option value="booleano">Booleano</option></select>
+      </div>
+    </div>
+    <div class="grid4">
+      <div class="field"><label>Tamanho máximo</label><input type="number" id="cdTamanho" placeholder="Ex.: 20"></div>
+      <div class="field"><label>Obrigatório?</label><select id="cdObrig"><option value="true">Sim</option><option value="false">Não</option></select></div>
+      <div class="field"><label>Regra de conversão</label>
+        <select id="cdConversao"><option value="">Nenhuma (direto)</option><option value="trim">trim</option><option value="removerMascara">removerMascara</option><option value="upperSemAcento">upperSemAcento</option><option value="dataBR">dataBR</option><option value="vazioParaN">vazioParaN</option></select>
+      </div>
+      <div class="field"><label>Chave</label><input type="text" id="cdChave" placeholder="Ex.: PK, FK, ou em branco"></div>
+    </div>
+    <div class="btnbar"><button class="btn" onclick="salvarCampoDicionario('${tid}')">Salvar campo</button></div>
+  `;
+}
+function salvarCampoDicionario(tid){
+  const tpl = TEMPLATE_CATALOG[tid];
+  const col = document.getElementById('cdCol').value;
+  const campo = document.getElementById('cdCampo').value;
+  const tabela = document.getElementById('cdTabela').value;
+  if(!col || !campo || !tabela){ alert('Preencha ao menos coluna de origem, tabela de destino e campo de destino.'); return; }
+  const novoCampo = {
+    col, rotulo: document.getElementById('cdRotulo').value || campo,
+    marcador: document.getElementById('cdMarcador').value || `@${campo}@`,
+    tabela, campo,
+    tipo: document.getElementById('cdTipo').value,
+    tamanho: document.getElementById('cdTamanho').value ? Number(document.getElementById('cdTamanho').value) : null,
+    obrigatorio: document.getElementById('cdObrig').value==='true',
+    conversao: document.getElementById('cdConversao').value || 'direto (sem transformação)',
+    conversaoFn: document.getElementById('cdConversao').value || null,
+    chave: document.getElementById('cdChave').value,
+  };
+  tpl.dicionario.push(novoCampo);
+  if(!tpl.tabelas.includes(tabela)) tpl.tabelas.push(tabela);
+  document.getElementById('formCampoDicionario_'+tid).innerHTML = '';
+  abrirDicionarioCatalogo(tid);
+}
+
+function toggleEditScriptTemplate(tid){
+  const el = document.getElementById('editScriptTemplate_'+tid);
+  if(el.innerHTML.trim()!==''){ el.innerHTML=''; return; }
+  const tpl = TEMPLATE_CATALOG[tid];
+  el.innerHTML = `
+    <div class="field">
+      <label>Template de script SQL (marcadores @CAMPO@)</label>
+      <textarea id="editScriptTemplateInput_${tid}" rows="4">${tpl.scriptTemplateManual||''}</textarea>
+    </div>
+    <div class="btnbar"><button class="btn secondary small" onclick="salvarScriptTemplateManual('${tid}')">Salvar</button></div>
+  `;
+}
+function salvarScriptTemplateManual(tid){
+  const tpl = TEMPLATE_CATALOG[tid];
+  const val = document.getElementById('editScriptTemplateInput_'+tid).value.trim();
+  tpl.scriptTemplateManual = val || null;
+  document.getElementById('editScriptTemplate_'+tid).innerHTML = '';
+  abrirDicionarioCatalogo(tid);
+}
+
+/* =========================================================================
+   8) TELA — DETALHE DA MIGRAÇÃO (todas as etapas são filhas da migração)
+   ========================================================================= */
+function migAtual(){ return MIGRACOES.find(m=>m.id===state.migracaoAtualId); }
+
+function templateLiberado(m, tid){
+  if(!m.tipo.sequenciaObrigatoria) return true;
+  const deps = (m.tipo.dependencias && m.tipo.dependencias[tid]) || [];
+  return deps.every(d => ['validado','aprovado'].includes(m.templatesState[d].status));
+}
+
+function abaLiberada(m, aba){
+  const algumValidado = Object.values(m.templatesState).some(t=>t.linhasLidas && t.linhasLidas.length && t.validacoes);
+  const algumDadosAprovados = Object.values(m.templatesState).some(t=>t.dadosAprovados);
+  const algumScriptGerado = Object.values(m.templatesState).some(t=>t.sqlGerado);
+  const algumScriptAprovado = Object.values(m.templatesState).some(t=>t.scriptAprovado);
+  if(aba==='templates') return true;
+  if(aba==='validacao') return algumValidado;
+  if(aba==='aprovacao') return algumValidado;
+  if(aba==='scripts') return algumDadosAprovados;
+  if(aba==='aprovacaoTecnica') return algumScriptGerado;
+  if(aba==='execucao') return algumScriptAprovado;
+  if(aba==='relatorio') return m.execucaoProgresso>=100;
+  if(aba==='downloads') return true;
+  return false;
+}
+
+function screenMigracao(){
+  const m = migAtual();
+  if(!m) return '<div class="card">Migração não encontrada. <button class="btn secondary" onclick="irPara(\'painel\')">Voltar</button></div>';
+  const abas = [
+    {key:'templates', label:'Templates & Upload'},
+    {key:'validacao', label:'Validação & Erros'},
+    {key:'aprovacao', label:'Aprovação de Dados'},
+    {key:'scripts', label:'Geração de Scripts'},
+    {key:'aprovacaoTecnica', label:'Aprovação Técnica'},
+    {key:'execucao', label:'Execução'},
+    {key:'relatorio', label:'Relatório Final'},
+    {key:'downloads', label:'Downloads'},
+  ];
+  return `
+    <div class="card">
+      <div class="closebar"><button class="linkbtn" onclick="irPara('painel')">← Voltar ao painel</button></div>
+      <h2>${m.id} — ${m.org.nome}</h2>
+      <div class="kv" style="margin-bottom:10px;">
+        <div>Tipo: <b>${m.tipo.nome}</b></div>
+        <div>Banco de destino: <b>${BANCOS.find(b=>b.id===m.banco).nome}</b></div>
+        <div>Operador: <b>${m.operador}</b></div>
+        <div>Status: ${badge(m.status)}</div>
+        <div>Criada em: <b>${m.criadoEm}</b></div>
+      </div>
+      <div class="timeline">
+        ${m.trilha.map((ev,i)=>`<div class="tl-item ${i<m.trilha.length-1?'done':'now'}">${ev.evento}<br><small>${ev.data}</small></div>`).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <div class="tabs">
+        ${abas.map(a=>{
+          const liberada = abaLiberada(m,a.key);
+          return `<div class="tab ${m.abaAtiva===a.key?'active':''} ${!liberada?'locked':''}" onclick="${liberada?`mudarAba('${a.key}')`:''}">${a.label}</div>`;
+        }).join('')}
+      </div>
+      <div id="abaConteudo">${renderAbaConteudo(m)}</div>
+    </div>
+  `;
+}
+function mudarAba(key){ migAtual().abaAtiva = key; renderAll(); }
+
+function renderAbaConteudo(m){
+  switch(m.abaAtiva){
+    case 'templates': return abaTemplates(m);
+    case 'validacao': return abaValidacao(m);
+    case 'aprovacao': return abaAprovacao(m);
+    case 'scripts': return abaScripts(m);
+    case 'aprovacaoTecnica': return abaAprovacaoTecnica(m);
+    case 'execucao': return abaExecucao(m);
+    case 'relatorio': return abaRelatorio(m);
+    case 'downloads': return abaDownloads(m);
+    default: return '';
+  }
+}
+
+/* ---------- ABA: TEMPLATES & UPLOAD ---------- */
+function abaTemplates(m){
+  return `
+    <div class="desc">${m.tipo.sequenciaObrigatoria ? 'Este tipo de migração exige sequência: um template só libera após a validação dos templates dos quais depende.' : 'Este tipo de migração permite importar qualquer template de forma individual, em qualquer ordem.'}</div>
+    ${m.tipo.templates.map(tid=>renderTemplateBlock(m,tid)).join('')}
+  `;
+}
+function statusTplBadge(st){
+  const map = {pendente:['gray','Pendente'], processando:['blue','Processando em lotes...'], carregado:['blue','Arquivo carregado'], 'em validacao':['orange','Em validação'], validado:['green','Validado'], 'com erro':['red','Com erro']};
+  const [cls,label] = map[st]||['gray',st];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+function renderTemplateBlock(m, tid){
+  const tpl = TEMPLATE_CATALOG[tid];
+  const st = m.templatesState[tid];
+  const liberado = templateLiberado(m, tid);
+  return `
+    <div class="tpl-catalog-card ${!liberado?'locked':''}" style="${!liberado?'opacity:.5;':''}">
+      <div class="head">
+        <div><b>${tpl.nome}</b> ${statusTplBadge(st.status)} ${!liberado?'<span class="badge gray">Bloqueado — aguarda dependência</span>':''}</div>
+        <button class="btn secondary small" ${!liberado?'disabled':''} onclick="toggleTemplateInline('${tid}')">${m.templateAberto===tid?'Fechar':'Abrir'}</button>
+      </div>
+      <div class="metabadges">
+        <span class="badge gray">${tpl.formato}</span>
+        ${tpl.tabelas.map(t=>`<span class="badge blue">${t}</span>`).join('')}
+      </div>
+      <div id="inline_${tid}">${m.templateAberto===tid ? renderTemplateInline(tid) : ''}</div>
+    </div>
+  `;
+}
+function toggleTemplateInline(tid){
+  const m = migAtual();
+  m.templateAberto = (m.templateAberto===tid) ? null : tid;
+  renderAll();
+}
+function renderTemplateInline(tid){
+  const m = migAtual(); const tpl = TEMPLATE_CATALOG[tid]; const st = m.templatesState[tid];
+  if(tpl.simulacaoDisponivel===false){
+    return `<div class="tpl-inline-block">
+      <div class="banner warn">Simulação completa ainda não disponível para este template neste protótipo (dicionário parcial / formato XML sem amostra real). Estrutura de configuração já demonstrada no Dicionário de Dados.</div>
+      ${tpl.formato==='XML' ? `<button class="btn secondary" onclick="previewESocial('${tid}')">Pré-visualizar XML como planilha</button><div id="esocialPreview_${tid}"></div>` : ''}
+    </div>`;
+  }
+  let corpo;
+  if(st.status === 'processando'){
+    const pct = st.totalLinhas ? Math.round((st.linhasProcessadas/st.totalLinhas)*100) : 0;
+    corpo = `
+      <div class="banner info">Importação processada em lotes, de forma assíncrona — equivalente ao processamento em background/staging descrito na Seção 7 do documento de especificação. Em produção, este progresso ficaria persistido no servidor: o operador poderia fechar a aba e retomar depois de onde parou.</div>
+      <div class="progressbar"><div class="fill" style="width:${pct}%"></div></div>
+      <small class="hint">${st.linhasProcessadas} de ${st.totalLinhas} linha(s) processada(s) (${pct}%)</small>
+      <div class="btnbar">
+        ${st.pausado
+          ? `<button class="btn secondary" onclick="continuarProcessamento('${tid}')">Continuar processamento</button>`
+          : `<button class="btn secondary" onclick="pausarProcessamento('${tid}')">Pausar</button>`}
+      </div>`;
+  } else if(st.linhasLidas && st.linhasLidas.length){
+    corpo = renderPreviewHtml(tid) + `<div class="btnbar"><button class="btn secondary" onclick="reiniciarUpload('${tid}')">Importar outro arquivo</button></div>`;
+  } else {
+    corpo = `
+      <div class="field" style="margin-top:14px;">
+        <label>Arquivo (${tpl.arquivoExemplo})</label>
+        <div class="dropzone" id="dz_${tid}" onclick="document.getElementById('file_${tid}').click()"
+             ondragover="event.preventDefault(); this.classList.add('over')"
+             ondragleave="this.classList.remove('over')"
+             ondrop="event.preventDefault(); this.classList.remove('over'); handleArquivo('${tid}', event.dataTransfer.files[0])">
+          Arraste o arquivo .xlsx aqui ou clique para selecionar — arquivos grandes são lidos e processados em lotes automaticamente, sem necessidade de dividi-los manualmente.
+        </div>
+        <input type="file" id="file_${tid}" accept=".xlsx" style="display:none" onchange="handleArquivo('${tid}', this.files[0])">
+      </div>`;
+  }
+  return `
+    <div class="tpl-inline-block">
+      <label>Operação</label>
+      <div class="op-choice">
+        ${tpl.operacoesPermitidas.map(op=>`<div class="opt ${st.operacao===op?'sel':''}" onclick="selecionarOperacao('${tid}','${op}')">${OPERACAO_META[op].label}</div>`).join('')}
+      </div>
+      <small class="hint">${OPERACAO_META[st.operacao].desc}</small>
+      ${corpo}
+    </div>
+  `;
+}
+function selecionarOperacao(tid, op){ migAtual().templatesState[tid].operacao = op; renderAll(); }
+
+// tamanho de lote de processamento (equivalente ao "tamanho de lote" citado na Seção 10.1
+// do documento de especificação) — arquivos grandes são fatiados automaticamente pelo motor,
+// nunca pelo usuário.
+const TAMANHO_LOTE_PROCESSAMENTO = 250;
+
+function handleArquivo(tid, file){
+  if(!file) return;
+  const m = migAtual(); const tpl = TEMPLATE_CATALOG[tid]; const st = m.templatesState[tid];
+  st.arquivoOriginal = file;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array', cellDates:true});
+      const ws = wb.Sheets[tpl.sheetName] || wb.Sheets[wb.SheetNames[0]];
+      const grid = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:''});
+      const rows = grid.slice(tpl.dataStartRow-1).filter(r=>r && r.some(v=>v!==''&&v!==undefined&&v!==null));
+      st._filaBruta = rows;
+      st.totalLinhas = rows.length;
+      st.linhasLidas = [];
+      st.linhasProcessadas = 0;
+      st.pausado = false;
+      st.status = 'processando';
+      renderAll();
+      // divide automaticamente em lotes de tamanho fixo e processa de forma assincrona (setTimeout
+      // simula o "yield" que, em produção, seria feito por um worker em background lendo de uma fila)
+      const numLotes = Math.max(1, Math.ceil(rows.length / TAMANHO_LOTE_PROCESSAMENTO));
+      st._tamanhoLoteAtual = Math.ceil(rows.length / numLotes) || 1;
+      processarProximoLote(tid);
+    }catch(err){
+      alert('Não foi possível ler o arquivo: '+err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+function processarProximoLote(tid){
+  const m = migAtual(); if(!m) return;
+  const tpl = TEMPLATE_CATALOG[tid]; const st = m.templatesState[tid];
+  if(st.status!=='processando' || st.pausado) return;
+  const lote = st._filaBruta.splice(0, st._tamanhoLoteAtual || TAMANHO_LOTE_PROCESSAMENTO);
+  lote.forEach(r => st.linhasLidas.push(tpl.lerLinha(r)));
+  st.linhasProcessadas += lote.length;
+  if(st._filaBruta.length === 0){
+    st.status = 'carregado';
+    renderAll();
+  } else {
+    renderAll();
+    setTimeout(()=>processarProximoLote(tid), 220);
+  }
+}
+function pausarProcessamento(tid){ migAtual().templatesState[tid].pausado = true; renderAll(); }
+function continuarProcessamento(tid){
+  const st = migAtual().templatesState[tid];
+  st.pausado = false; renderAll(); processarProximoLote(tid);
+}
+function reiniciarUpload(tid){
+  const st = migAtual().templatesState[tid];
+  Object.assign(st, {status:'pendente', arquivoOriginal:null, linhasLidas:[], validacoes:[], sqlGerado:'', jsonGerado:'', csvGerado:'', totalLinhas:0, linhasProcessadas:0, pausado:false});
+  renderAll();
+}
+function renderPreviewHtml(tid){
+  const m = migAtual(); const st = m.templatesState[tid];
+  const rows = st.linhasLidas.slice(0,8);
+  if(!rows.length) return '<div class="banner warn">Nenhuma linha de dados encontrada a partir da linha configurada.</div>';
+  const cols = Object.keys(rows[0]).filter(k=>!k.startsWith('_'));
+  return `
+    <h3>Pré-visualização (${st.linhasLidas.length} linha(s) lida(s) e processada(s) em lotes, mostrando ${rows.length})</h3>
+    <div class="tblwrap"><table><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r=>`<tr>${cols.map(c=>`<td class="mono">${r[c]===undefined||r[c]===null||r[c]===''?'<i style="color:#c0392b">vazio</i>':r[c]}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+    <div class="btnbar"><button class="btn" onclick="executarValidacao('${tid}')">Executar validação (${st.linhasLidas.length} linhas)</button></div>
+  `;
+}
+
+function baseMockContexto(tpl){
+  const baseMock = {};
+  (tpl.tabelas||[]).forEach(t=> baseMock[t] = (tpl.baseMockSeed && tpl.baseMockSeed[t]) || []);
+  if(tpl.baseMockSeed) Object.keys(tpl.baseMockSeed).forEach(t=> baseMock[t] = tpl.baseMockSeed[t]);
+  return baseMock;
+}
+
+function executarValidacao(tid){
+  const m = migAtual(); const tpl = TEMPLATE_CATALOG[tid]; const st = m.templatesState[tid];
+  const ctx = {nrOrg:m.org.id, usuarioTecnico:'000000099991', baseMock: baseMockContexto(tpl)};
+  st.validacoes = [];
+  st.linhasLidas.forEach((campos, idx)=>{
+    const resultados = tpl.validarLinha(campos, ctx);
+    resultados.forEach(r=> st.validacoes.push({linha: idx + tpl.dataStartRow, ...r}));
+  });
+  st.status = st.validacoes.some(v=>v.sev==='erro') ? 'com erro' : 'validado';
+  m.status = 'em validacao';
+  m.abaAtiva = 'validacao';
+  renderAll();
+}
+
+/* ---------- ABA: VALIDAÇÃO ---------- */
+function abaValidacao(m){
+  const templatesComDados = m.tipo.templates.filter(tid=>m.templatesState[tid].linhasLidas.length);
+  if(!templatesComDados.length) return '<div class="banner info">Nenhum template importado ainda. Vá para a aba "Templates & Upload".</div>';
+  return templatesComDados.map(tid=>{
+    const tpl = TEMPLATE_CATALOG[tid]; const st = m.templatesState[tid];
+    const nErros = st.validacoes.filter(v=>v.sev==='erro').length;
+    return `
+      <h3>${tpl.nome} <span class="hint">(${st.linhasLidas.length} linhas, ${st.validacoes.length} ocorrência(s))</span></h3>
+      ${nErros>0 ? `<div class="banner block">${nErros} erro(s) impeditivo(s) — corrija antes de aprovar os dados.</div>` : `<div class="banner ok">Sem erros impeditivos.</div>`}
+      <div class="tblwrap">
+        <table>
+          <thead><tr><th>Severidade</th><th>Linha</th><th>Campo</th><th>Recebido</th><th>Esperado</th><th>Orientação</th></tr></thead>
+          <tbody>
+            ${st.validacoes.map(v=>`
+              <tr>
+                <td><span class="badge ${SEV_META[v.sev].cls}">${SEV_META[v.sev].label}</span></td>
+                <td>${v.linha}</td>
+                <td class="mono">${v.campo}</td>
+                <td class="mono">${v.ajustado ? `<div class="diff"><span class="old">${v.recebido}</span><span class="new">${v.ajustado}</span></div>` : v.recebido}</td>
+                <td>${v.esperado}</td>
+                <td>${v.orientacao}</td>
+              </tr>`).join('') || '<tr><td colspan="6">Nenhuma ocorrência — todos os registros passaram integralmente.</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+      <div class="btnbar">
+        <button class="btn secondary" onclick="exportarInconsistencias('${tid}')">Exportar planilha de inconsistências (.csv)</button>
+      </div>
+    `;
+  }).join('<hr style="border:none;border-top:1px solid var(--border);margin:18px 0;">')
+  + `<div class="btnbar"><button class="btn" onclick="mudarAba('aprovacao')">Ir para aprovação de dados</button></div>`;
+}
+function exportarInconsistencias(tid){
+  const m = migAtual(); const st = m.templatesState[tid];
+  baixarArquivo(`inconsistencias_${tid}.csv`, toCSV(st.validacoes), 'text/csv');
+}
+
+/* ---------- ABA: APROVAÇÃO DE DADOS (por template, individual) ---------- */
+function abaAprovacao(m){
+  const templatesComDados = m.tipo.templates.filter(tid=>m.templatesState[tid].linhasLidas.length);
+  if(!templatesComDados.length) return `<div class="banner info">Nenhum template com dados importados ainda. Faça o upload na aba "Templates & Upload".</div>`;
+  return templatesComDados.map(tid=>{
+    const tpl = TEMPLATE_CATALOG[tid]; const st = m.templatesState[tid];
+    const errLinhas = new Set(st.validacoes.filter(v=>v.sev==='erro').map(v=>v.linha));
+    const validos = st.linhasLidas.length - errLinhas.size;
+    const alertas = st.validacoes.filter(v=>v.sev==='alerta').length;
+    const temErro = errLinhas.size>0;
+    return `
+      <h3>${tpl.nome} ${st.dadosAprovados ? '<span class="badge green">Dados aprovados</span>' : ''}</h3>
+      <div class="counters">
+        <div class="counter"><div class="n">${st.linhasLidas.length}</div><div class="l">Recebidos</div></div>
+        <div class="counter"><div class="n" style="color:var(--green)">${validos}</div><div class="l">Válidos</div></div>
+        <div class="counter"><div class="n" style="color:var(--red)">${errLinhas.size}</div><div class="l">Rejeitados</div></div>
+        <div class="counter"><div class="n" style="color:var(--orange)">${alertas}</div><div class="l">Alertas</div></div>
+      </div>
+      ${temErro ? `<div class="banner block">Existem erros impeditivos pendentes neste template — resolva-os na aba Validação antes de aprovar.</div>` : ''}
+      <div class="btnbar">
+        ${st.dadosAprovados
+          ? `<span class="hint">Aprovado por ${m.operador} — este template já pode seguir para geração de script.</span>`
+          : `<button class="btn success" ${temErro?'disabled':''} onclick="aprovarDadosTemplate('${tid}')">Aprovar dados de ${tpl.nome}</button>`}
+      </div>
+    `;
+  }).join('<hr style="border:none;border-top:1px solid var(--border);margin:18px 0;">');
+}
+function todosDadosAprovados(m){
+  const comDados = m.tipo.templates.filter(tid=>m.templatesState[tid].linhasLidas.length);
+  return comDados.length>0 && comDados.every(tid=>m.templatesState[tid].dadosAprovados);
+}
+function aprovarDadosTemplate(tid){
+  const m = migAtual(); const tpl = TEMPLATE_CATALOG[tid]; const st = m.templatesState[tid];
+  if(st.validacoes.some(v=>v.sev==='erro')){ alert('Existem erros impeditivos pendentes neste template.'); return; }
+  st.dadosAprovados = true;
+  m.trilha.push({evento:`Dados aprovados — ${tpl.nome}`, usuario:m.operador, data:new Date().toLocaleString('pt-BR')});
+  if(todosDadosAprovados(m)){ m.dadosAprovados = true; m.status = 'aguardando aprovacao'; }
+  m.abaAtiva = 'scripts';
+  renderAll();
+}
+
+/* ---------- ABA: GERAÇÃO DE SCRIPTS ---------- */
+function abaScripts(m){
+  const comDados = m.tipo.templates.filter(tid=>m.templatesState[tid].linhasLidas.length);
+  if(!comDados.length) return `<div class="banner info">Nenhum template com dados importados ainda.</div>`;
+  return comDados.map(tid=>{
+    const tpl = TEMPLATE_CATALOG[tid]; const st = m.templatesState[tid];
+    if(!st.dadosAprovados){
+      return `<h3>${tpl.nome}</h3><div class="banner info">Aguardando aprovação dos dados deste template (aba "Aprovação de Dados") antes de gerar o script.</div>`;
+    }
+    return `
+      <h3>${tpl.nome} <span class="badge ${OPERACAO_META[st.operacao].cls}">${OPERACAO_META[st.operacao].label}</span> ${st.scriptAprovado ? '<span class="badge green">Aprovado tecnicamente</span>' : ''}</h3>
+      ${st.sqlGerado
+        ? `<div class="codebox">${st.sqlGerado.slice(0,3000)}</div>
+           <div class="btnbar">
+             <button class="btn secondary small" onclick="baixarArquivo('${tid}_script.sql', migAtual().templatesState['${tid}'].sqlGerado, 'application/sql')">Baixar .sql</button>
+             <button class="btn secondary small" onclick="baixarArquivo('${tid}_dados.json', migAtual().templatesState['${tid}'].jsonGerado, 'application/json')">Baixar .json</button>
+             <button class="btn secondary small" onclick="baixarArquivo('${tid}_dados.csv', migAtual().templatesState['${tid}'].csvGerado, 'text/csv')">Baixar .csv</button>
+           </div>
+           ${!st.scriptAprovado ? `<div class="hint" style="margin-top:6px;">Vá para a aba "Aprovação Técnica" para revisar e aprovar este script individualmente.</div>` : ''}`
+        : `<button class="btn secondary" onclick="gerarScriptTemplate('${tid}')">Gerar script (${OPERACAO_META[st.operacao].label})</button>`
+      }
+    `;
+  }).join('<hr style="border:none;border-top:1px solid var(--border);margin:18px 0;">');
+}
+function buildUpdateGenerico(tabela, campos, pkFields, ctx){
+  const sets = Object.keys(campos).filter(k=>!k.startsWith('_') && !pkFields.includes(k)).map(k=> typeof campos[k]==='number' ? `${k} = ${campos[k]}` : `${k} = '${campos[k]}'`);
+  const wheres = pkFields.map(k=> typeof campos[k]==='number' ? `${k} = ${campos[k]}` : `${k} = '${campos[k]}'`);
+  return `UPDATE ${tabela} SET ${sets.join(', ')} WHERE NRORG = ${ctx.nrOrg} AND ${wheres.join(' AND ')};`;
+}
+function buildDeleteGenerico(tabela, campos, pkFields, ctx){
+  const wheres = pkFields.map(k=> typeof campos[k]==='number' ? `${k} = ${campos[k]}` : `${k} = '${campos[k]}'`);
+  return `DELETE FROM ${tabela} WHERE NRORG = ${ctx.nrOrg} AND ${wheres.join(' AND ')};`;
+}
+function computarInsertLinha(tpl, campos, ctx){
+  let pk = {};
+  if(tpl.pkGeracao){
+    tpl.pkGeracao.forEach(p=>{
+      const usados = new Set((ctx.baseMock[p.tabela]||[]).map(r=>Object.values(r)[0]));
+      pk[p.campo] = pkProximoLivre(ctx.nrOrg, p.campo, p.seed, usados);
+    });
+  }
+  return tpl.gerarInsert(campos, ctx, pk);
+}
+function gerarScriptTemplate(tid){
+  const m = migAtual(); const tpl = TEMPLATE_CATALOG[tid]; const st = m.templatesState[tid];
+  const ctx = {nrOrg:m.org.id, usuarioTecnico:'000000099991', baseMock: baseMockContexto(tpl)};
+  const linhas = [];
+  st.linhasLidas.forEach((campos, idx)=>{
+    const errLinha = st.validacoes.some(v=>v.linha===idx+tpl.dataStartRow && v.sev==='erro');
+    if(errLinha) return;
+    if(st.operacao==='INCLUSAO'){
+      linhas.push(computarInsertLinha(tpl, campos, ctx));
+    } else if(st.operacao==='ALTERACAO'){
+      (tpl.pkFields ? Object.entries(tpl.pkFields) : []).forEach(([tabela,pkFields])=>{
+        linhas.push(buildUpdateGenerico(tabela, campos, pkFields, ctx));
+      });
+    } else if(st.operacao==='EXCLUSAO'){
+      (tpl.pkFields ? Object.entries(tpl.pkFields) : []).forEach(([tabela,pkFields])=>{
+        linhas.push(buildDeleteGenerico(tabela, campos, pkFields, ctx));
+      });
+    }
+  });
+  st.sqlGerado = linhas.join('\n');
+  st.jsonGerado = JSON.stringify(st.linhasLidas, null, 2);
+  st.csvGerado = toCSV(st.linhasLidas);
+  renderAll();
+}
+/* ---------- ABA: APROVAÇÃO TÉCNICA (por script, individual) ---------- */
+function abaAprovacaoTecnica(m){
+  const comScript = m.tipo.templates.filter(tid=>m.templatesState[tid].sqlGerado);
+  if(!comScript.length) return `<div class="banner info">Nenhum script gerado ainda — gere na aba "Geração de Scripts".</div>`;
+  return `<div class="desc">Perfil: Aprovador Técnico (segregado do Aprovador Funcional). Cada script é aprovado individualmente — não é necessário aprovar todos de uma vez.</div>`
+  + comScript.map(tid=>{
+    const tpl = TEMPLATE_CATALOG[tid]; const st = m.templatesState[tid];
+    return `
+      <h3>${tpl.nome} ${st.scriptAprovado ? '<span class="badge green">Aprovado</span>' : '<span class="badge orange">Aguardando aprovação técnica</span>'}</h3>
+      <div class="codebox">${st.sqlGerado.slice(0,1500)}</div>
+      ${st.scriptAprovado
+        ? `<div class="hint">Aprovado por ${m.operador}.</div>`
+        : `<div class="checkline"><input type="checkbox" id="chk1_${tid}"> Conteúdo do script revisado e consistente com os dados aprovados</div>
+           <div class="checkline"><input type="checkbox" id="chk2_${tid}"> Banco de destino (${BANCOS.find(b=>b.id===m.banco).nome}) confirmado</div>
+           <div class="btnbar"><button class="btn success" onclick="aprovarScriptTemplate('${tid}')">Aprovar script de ${tpl.nome}</button></div>`}
+    `;
+  }).join('<hr style="border:none;border-top:1px solid var(--border);margin:18px 0;">');
+}
+function todosScriptsAprovados(m){
+  const comScript = m.tipo.templates.filter(tid=>m.templatesState[tid].sqlGerado);
+  return comScript.length>0 && comScript.every(tid=>m.templatesState[tid].scriptAprovado);
+}
+function aprovarScriptTemplate(tid){
+  if(!document.getElementById('chk1_'+tid).checked || !document.getElementById('chk2_'+tid).checked){
+    alert('Confirme todos os itens antes de aprovar este script.'); return;
+  }
+  const m = migAtual(); const tpl = TEMPLATE_CATALOG[tid]; const st = m.templatesState[tid];
+  st.scriptAprovado = true;
+  m.trilha.push({evento:`Script aprovado — ${tpl.nome}`, usuario:m.operador, data:new Date().toLocaleString('pt-BR')});
+  if(todosScriptsAprovados(m)){ m.scriptAprovado = true; m.status = 'aguardando aplicacao'; }
+  m.abaAtiva = 'execucao';
+  renderAll();
+}
+
+/* ---------- ABA: EXECUÇÃO ---------- */
+function abaExecucao(m){
+  const aprovados = m.tipo.templates.filter(tid=>m.templatesState[tid].scriptAprovado);
+  if(!aprovados.length) return `<div class="banner info">Nenhum script aprovado tecnicamente ainda — aprove ao menos um na aba "Aprovação Técnica".</div>`;
+  const aplicados = aprovados.filter(tid=>m.templatesState[tid].execucaoStatus==='aplicado').length;
+  const progresso = Math.round((aplicados/aprovados.length)*100);
+  return `
+    <div class="progressbar"><div class="fill" style="width:${progresso}%"></div></div>
+    <small class="hint">${aplicados} de ${aprovados.length} script(s) aprovado(s) aplicado(s) neste banco (${progresso}%) — cada script pode ser aplicado individualmente, assim que aprovado.</small>
+    ` + aprovados.map(tid=>{
+      const tpl = TEMPLATE_CATALOG[tid]; const st = m.templatesState[tid];
+      const aplicando = st.execucaoStatus==='aplicando';
+      const aplicado = st.execucaoStatus==='aplicado';
+      return `
+        <div class="loglist" style="margin-top:14px;">
+          <div class="logline">
+            <span class="dot ${aplicado?'ok':'pending'}"></span>
+            ${tpl.nome} — ${aplicado ? `aplicado com sucesso (${st.linhasLidas.length} linha(s)).` : aplicando ? 'aplicando…' : 'aprovado, aguardando aplicação.'}
+          </div>
+          ${!aplicado ? `<div class="btnbar"><button class="btn" ${aplicando?'disabled':''} onclick="aplicarScriptTemplate('${tid}')">${aplicando?'Aplicando…':`Aplicar script de ${tpl.nome}`}</button></div>` : ''}
+        </div>`;
+    }).join('')
+  + (aplicados===aprovados.length ? `<div class="btnbar"><button class="btn" onclick="finalizarMigracao()">Ver relatório final</button></div>` : '');
+}
+function aplicarScriptTemplate(tid){
+  const m = migAtual(); const st = m.templatesState[tid];
+  m.status = 'em execucao';
+  st.execucaoStatus = 'aplicando';
+  renderAll();
+  setTimeout(()=>{
+    st.execucaoStatus = 'aplicado';
+    m.execucaoLog.push({ok:true, texto:`${TEMPLATE_CATALOG[tid].nome} — script aplicado com sucesso (${st.linhasLidas.length} linha(s)).`});
+    m.trilha.push({evento:`Script aplicado — ${TEMPLATE_CATALOG[tid].nome}`, usuario:m.operador, data:new Date().toLocaleString('pt-BR')});
+    const aprovados = m.tipo.templates.filter(t=>m.templatesState[t].scriptAprovado);
+    m.execucaoProgresso = Math.round((aprovados.filter(t=>m.templatesState[t].execucaoStatus==='aplicado').length/aprovados.length)*100);
+    renderAll();
+  }, 650);
+}
+function finalizarMigracao(){
+  const m = migAtual();
+  const temAlerta = m.tipo.templates.some(tid=>m.templatesState[tid].validacoes.some(v=>v.sev==='alerta'));
+  m.status = temAlerta ? 'concluida alertas' : 'concluida';
+  m.trilha.push({evento:'Migração concluída', usuario:m.operador, data:new Date().toLocaleString('pt-BR')});
+  m.abaAtiva = 'relatorio';
+  renderAll();
+}
+
+/* ---------- ABA: RELATÓRIO FINAL ---------- */
+function abaRelatorio(m){
+  let recebidos=0, alertas=0, erros=0;
+  m.tipo.templates.forEach(tid=>{ const st=m.templatesState[tid]; recebidos+=st.linhasLidas.length; alertas+=st.validacoes.filter(v=>v.sev==='alerta').length; erros+=st.validacoes.filter(v=>v.sev==='erro').length; });
+  return `
+    <div class="banner ${m.status==='concluida'?'ok':'warn'}">${badge(m.status)} — organização liberada para iniciar uma nova migração.</div>
+    <div class="counters">
+      <div class="counter"><div class="n">${recebidos}</div><div class="l">Recebidos</div></div>
+      <div class="counter"><div class="n" style="color:var(--orange)">${alertas}</div><div class="l">Alertas</div></div>
+      <div class="counter"><div class="n" style="color:var(--red)">${erros}</div><div class="l">Erros</div></div>
+    </div>
+    <table>
+      <thead><tr><th>Evento</th><th>Usuário</th><th>Data/Hora</th></tr></thead>
+      <tbody>${m.trilha.map(ev=>`<tr><td>${ev.evento}</td><td>${ev.usuario}</td><td>${ev.data}</td></tr>`).join('')}</tbody>
+    </table>
+    <div class="btnbar"><button class="btn secondary" onclick="mudarAba('downloads')">Ver downloads</button></div>
+  `;
+}
+
+/* ---------- ABA: DOWNLOADS ---------- */
+function abaDownloads(m){
+  return `
+    <div class="desc">Disponibilidade dos arquivos reflete o status atual da migração — cada artefato aparece assim que é gerado na etapa correspondente.</div>
+    <table>
+      <thead><tr><th>Template</th><th>Arquivo original</th><th>.json (staging)</th><th>.csv (staging)</th><th>.sql (script)</th></tr></thead>
+      <tbody>
+        ${m.tipo.templates.map(tid=>{
+          const tpl = TEMPLATE_CATALOG[tid]; const st = m.templatesState[tid];
+          return `<tr>
+            <td><b>${tpl.nome}</b></td>
+            <td>${st.arquivoOriginal ? `<button class="btn secondary small" onclick="baixarOriginal('${tid}')">Baixar .xlsx</button>` : '<span class="hint">não enviado</span>'}</td>
+            <td>${st.jsonGerado ? `<button class="btn secondary small" onclick="baixarArquivo('${tid}.json', migAtual().templatesState['${tid}'].jsonGerado, 'application/json')">Baixar</button>` : '<span class="hint">pendente</span>'}</td>
+            <td>${st.csvGerado ? `<button class="btn secondary small" onclick="baixarArquivo('${tid}.csv', migAtual().templatesState['${tid}'].csvGerado, 'text/csv')">Baixar</button>` : '<span class="hint">pendente</span>'}</td>
+            <td>${st.sqlGerado ? `<button class="btn secondary small" onclick="baixarArquivo('${tid}.sql', migAtual().templatesState['${tid}'].sqlGerado, 'application/sql')">Baixar</button>` : '<span class="hint">pendente</span>'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+function baixarOriginal(tid){
+  const st = migAtual().templatesState[tid];
+  baixarBlobOriginal(st.arquivoOriginal, st.arquivoOriginal.name);
+}
+
+/* ---------- eSocial (mock de pré-visualização) ---------- */
+function previewESocial(tid){
+  const mock = [
+    {evento:'S-2200', matricula:'0004512', nome:'MARIA DA SILVA SANTOS', cpf:'12345678900', dtAdmissao:'01/07/2026', categoria:'101', cargo:'ANALISTA DE RH'},
+    {evento:'S-2200', matricula:'0004513', nome:'JOÃO PEREIRA LIMA', cpf:'98765432100', dtAdmissao:'01/07/2026', categoria:'101', cargo:'AUXILIAR ADMINISTRATIVO'},
+    {evento:'S-1200', matricula:'0004512', competencia:'06/2026', rubrica:'1000 - SALÁRIO BASE', valor:'4.250,00'},
+  ];
+  document.getElementById('esocialPreview_'+tid).innerHTML = `
+    <h3>Pré-visualização (planilha simulada) antes da geração dos INSERTs</h3>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Evento</th><th>Matrícula</th><th>Nome</th><th>CPF</th><th>Dt. Admissão / Competência</th><th>Categoria/Rubrica</th><th>Cargo/Valor</th></tr></thead>
+      <tbody>${mock.map(r=>`<tr><td>${r.evento}</td><td>${r.matricula}</td><td>${r.nome||''}</td><td>${r.cpf||''}</td><td>${r.dtAdmissao||r.competencia||''}</td><td>${r.categoria||r.rubrica||''}</td><td>${r.cargo||r.valor||''}</td></tr>`).join('')}</tbody>
+    </table></div>
+    <small class="hint">Dados fictícios apenas para demonstrar o ponto de checagem solicitado antes da geração dos scripts de eventos eSocial.</small>
+  `;
+}
+
+/* =========================================================================
+   9) TEMPLATES ADICIONAIS — planilhas de "migração integral do cliente"
+   (06 a 13) — dicionário extraído das planilhas reais fornecidas; motor
+   genérico + scriptTemplateManual (mesmo mecanismo de marcador @CAMPO@
+   usado pelas planilhas originais). Ver Seção 26 do documento de
+   especificação para o detalhamento completo de cada uma.
+   ========================================================================= */
+
+TEMPLATE_CATALOG.alteracaoSalarial = {
+  id:'alteracaoSalarial', nome:'Alteração Salarial', arquivoExemplo:'06_AlteracaoSalarial_v12.xlsx',
+  formato:'XLSX', sheetName:'Dados', headerRow:2, dataStartRow:3,
+  operacoesPermitidas:['INCLUSAO','EXCLUSAO'],
+  tabelas:['GPE_ALTESALARIO'],
+  pkGeracao:[{campo:'NRALTESALARIO', tabela:'GPE_ALTESALARIO', seed:0}],
+  dicionario:[
+    {col:'(gerado)', rotulo:'Nº sequencial (Busca de PK\'s livres / NOVOCODIGO)', marcador:'@NRALTESALARIO@', tabela:'GPE_ALTESALARIO', campo:'NRALTESALARIO', tipo:'numerico', obrigatorio:false, conversao:'gerado automaticamente', chave:'PK'},
+    {col:'A', rotulo:'Nr Vinculo', marcador:'@CDMATRICULA@', tabela:'GPE_VINCULOM', campo:'CDMATRICULA', tipo:'texto', obrigatorio:true, conversao:'trim', conversaoFn:'trim', chave:'FK (subquery em GPE_VINCULOM)', obs:'Vínculo deve existir (checagem contra planilha 04_Vínculo já migrada) — na planilha original, linhas com vínculo não encontrado são listadas separadamente e não geram INSERT.'},
+    {col:'B', rotulo:'Dt. Alteração', marcador:'@DTALTESALARIO@', tabela:'GPE_ALTESALARIO', campo:'DTALTESALARIO', tipo:'data', obrigatorio:true, conversao:'dataBR', conversaoFn:'dataBR', chave:''},
+    {col:'C', rotulo:'Numero Ocorrencia', marcador:'@NROCORRENCIA@', tabela:'GPE_ALTESALARIO', campo:'NROCORRENCIA', tipo:'numerico', obrigatorio:false, conversao:'vazio => 1 (default da planilha original)', chave:''},
+    {col:'D', rotulo:'Tipo Alteração', marcador:'@NRTIPOALTERA@', tabela:'GPE_ALTESALARIO', campo:'NRTIPOALTERA', tipo:'texto', obrigatorio:true, conversao:'direto', chave:'FK — domínio GPE_TIPOALTERA', obs:'A planilha original recomenda validar contra "SELECT * FROM GPE_TIPOALTERA" antes da carga.'},
+    {col:'E', rotulo:'Salário', marcador:'@VRSALARIO@', tabela:'GPE_ALTESALARIO', campo:'VRSALARIO', tipo:'monetario', obrigatorio:true, conversao:'numeroDecimal (vírgula → ponto)', conversaoFn:'numeroDecimal', chave:'', obs:'Planilha original bloqueia linhas com salário vazio ou zerado ("Verificação Sal. Zerado") — reproduzido aqui como campo obrigatório.'},
+    {col:'F', rotulo:'Tipo Salário', marcador:'@IDTPSALARIO@', tabela:'GPE_ALTESALARIO', campo:'IDTPSALARIO', tipo:'texto', obrigatorio:true, conversao:'trim + upper (ex.: MENSAL, HORISTA)', conversaoFn:'trim', chave:''},
+    {col:'G', rotulo:'Observação', marcador:'@DSOBSERVACAO@', tabela:'GPE_ALTESALARIO', campo:'DSOBSERVACAO', tipo:'texto', obrigatorio:false, conversao:'trim; vazio => NVL com texto padrão "Alteracao salarial importada via migracao"', conversaoFn:'trim', chave:''},
+  ],
+  obsGeral:'Planilha real com mecanismo de deduplicação ("mesc — Insere alteração salarial?") que evita reimportar uma alteração já existente no destino — não replicado no protótipo (simulação sempre inclui).',
+  scriptTemplateManual:"INSERT INTO GPE_ALTESALARIO ( NRALTESALARIO, NRORG, NRVINCULOM, DTALTESALARIO, NROCORRENCIA, NRTIPOALTERA, VRSALARIO, IDTPSALARIO, DSOBSERVACAO, NRTPMODALIDSAL, DTINCLUSAO, NRORGINCLUSAO, CDOPERINCLUSAO ) VALUES ( @NRALTESALARIO@, @NRORG@, ( SELECT /*MAX(*/ NRVINCULOM /*)*/ FROM GPE_VINCULOM WHERE NRORG = @NRORG@ AND CDMATRICULA = '@CDMATRICULA@' ), '@DTALTESALARIO@', @NROCORRENCIA@, '@NRTIPOALTERA@', @VRSALARIO@, '@IDTPSALARIO@', NVL( '@DSOBSERVACAO@', 'Alteracao salarial importada via migracao' ), 1, SYSDATE, @NRORG@, '000000099991' ); COMMIT;",
+};
+
+TEMPLATE_CATALOG.alteracaoEscala = {
+  id:'alteracaoEscala', nome:'Alteração de Escala de Trabalho', arquivoExemplo:'07_Alteracao de Escala_v10.xlsx',
+  formato:'XLSX', sheetName:'Dados', headerRow:2, dataStartRow:3,
+  operacoesPermitidas:['INCLUSAO'],
+  tabelas:['GPE_ALTEESCALA'],
+  pkGeracao:[{campo:'NRALTEESCALA', tabela:'GPE_ALTEESCALA', seed:14957}],
+  dicionario:[
+    {col:'(gerado)', rotulo:'Nº sequencial (Busca de PK\'s livres / NOVOCODIGO)', marcador:'@NRALTEESCALA@', tabela:'GPE_ALTEESCALA', campo:'NRALTEESCALA', tipo:'numerico', obrigatorio:false, conversao:'gerado automaticamente', chave:'PK'},
+    {col:'A', rotulo:'Nr Vinculo', marcador:'@NRVINCULOM@', tabela:'GPE_VINCULOM', campo:'NRVINCULOM', tipo:'texto', obrigatorio:true, conversao:'trim (ou zero-fill configurável, conforme aba Base)', conversaoFn:'trim', chave:'FK (subquery em GPE_VINCULOM)', obs:'Planilha original permite escolher se a coluna A é matrícula (texto) ou nº de vínculo (numérico) via configuração — protótipo assume matrícula.'},
+    {col:'B', rotulo:'Dt Alteracao', marcador:'@DTINIESCALA@', tabela:'GPE_ALTEESCALA', campo:'DTINIESCALA', tipo:'data', obrigatorio:true, conversao:'dataBR', conversaoFn:'dataBR', chave:''},
+    {col:'C', rotulo:'Escala', marcador:'@NRESCALATRABM@', tabela:'GPE_ESCALATRABM', campo:'NRESCALATRABM', tipo:'numerico', obrigatorio:true, conversao:'numeroDecimal', conversaoFn:'numeroDecimal', chave:'FK — deve existir na planilha 03_EscalaTrabalho já migrada', obs:'Validação "A escala existe?" na planilha original.'},
+  ],
+  obsGeral:'Arquivo real fornecido continha 3.587 linhas de dados de produção — bom exemplo de volume real para o processamento em lote (Seção 22 do documento). Fórmula de geração de script da planilha original usa uma função de macro customizada (MIG_GERA.SCRIPT) não decodificável estaticamente; o INSERT abaixo foi reconstruído seguindo o mesmíssimo padrão observado nas demais 7 planilhas (mesmas convenções de NRORG/DTINCLUSAO/CDOPERINCLUSAO).',
+  scriptTemplateManual:"INSERT INTO GPE_ALTEESCALA ( NRALTEESCALA, NRORG, NRVINCULOM, DTINIESCALA, NRESCALATRABM, DTINCLUSAO, NRORGINCLUSAO, CDOPERINCLUSAO ) VALUES ( @NRALTEESCALA@, @NRORG@, ( SELECT /*MAX(*/ NRVINCULOM /*)*/ FROM GPE_VINCULOM WHERE NRORG = @NRORG@ AND CDMATRICULA = '@NRVINCULOM@' ), '@DTINIESCALA@', @NRESCALATRABM@, SYSDATE, @NRORG@, '000000099991' ); COMMIT;",
+};
+
+TEMPLATE_CATALOG.alteracaoOcupacao = {
+  id:'alteracaoOcupacao', nome:'Alteração de Ocupação', arquivoExemplo:'08_AlteracaoOcupacao_v11.xlsx',
+  formato:'XLSX', sheetName:'Dados', headerRow:2, dataStartRow:3,
+  operacoesPermitidas:['INCLUSAO'],
+  tabelas:['GPE_ALTEOCUPACAO'],
+  pkGeracao:[{campo:'NRALTEOCUPACAO', tabela:'GPE_ALTEOCUPACAO', seed:83350}],
+  dicionario:[
+    {col:'(gerado)', rotulo:'Nº sequencial (Busca de PK\'s livres / NOVOCODIGO)', marcador:'@NRALTEOCUPACAO@', tabela:'GPE_ALTEOCUPACAO', campo:'NRALTEOCUPACAO', tipo:'numerico', obrigatorio:false, conversao:'gerado automaticamente', chave:'PK'},
+    {col:'A', rotulo:'Nr Vinculo', marcador:'@VINC@', tabela:'GPE_VINCULOM', campo:'VINC', tipo:'texto', obrigatorio:true, conversao:'direto (CDMATRICULA)', chave:'FK (subquery em GPE_VINCULOM)', obs:'Validação "Existe vínculo?" contra planilha 04_Vínculo já migrada.'},
+    {col:'B', rotulo:'Dt Alteracao', marcador:'@DTINIOCUPACAO@', tabela:'GPE_ALTEOCUPACAO', campo:'DTINIOCUPACAO', tipo:'data', obrigatorio:true, conversao:'dataBR', conversaoFn:'dataBR', chave:''},
+    {col:'C', rotulo:'Ocupacao', marcador:'@NROCUPA@', tabela:'GPE_OCUPACAOH', campo:'NROCUPA', tipo:'texto', obrigatorio:true, conversao:'direto (código de integração)', chave:'FK (subquery em GPE_OCUPACAOH por CDINTEGRACAO)', obs:'Validação "Existe ocupação?" contra planilha 02_Ocupação já migrada.'},
+  ],
+  obsGeral:'Arquivo real fornecido continha 835 linhas de dados de produção.',
+  scriptTemplateManual:"INSERT INTO GPE_ALTEOCUPACAO ( NRORG, NRALTEOCUPACAO, NRVINCULOM, DTINIOCUPACAO, NROCUPACAOM, NRTPMODALIDSAL, DSOBSERVACAO, DTINCLUSAO, NRORGINCLUSAO, CDOPERINCLUSAO, NRTIPOOCUPACAO ) VALUES ( @NRORG@, @NRALTEOCUPACAO@, ( SELECT /*MAX(*/NRVINCULOM/*)*/ FROM GPE_VINCULOM WHERE NRORG = @NRORG@ AND CDMATRICULA = '@VINC@' ), '@DTINIOCUPACAO@', ( SELECT MAX(NROCUPACAOM) FROM GPE_OCUPACAOH WHERE NRORG = @NRORG@ AND CDINTEGRACAO = '@NROCUPA@' ), 1, 'Alteracao incluida via migracao', SYSDATE, @NRORG@, '000000099991', 1 ); COMMIT;",
+};
+
+TEMPLATE_CATALOG.situacaoFuncional = {
+  id:'situacaoFuncional', nome:'Situação Funcional (afastamentos)', arquivoExemplo:'09_SituacaoFuncional_v07.xlsx',
+  formato:'XLSX', sheetName:'Dados', headerRow:2, dataStartRow:3,
+  operacoesPermitidas:['INCLUSAO'],
+  tabelas:['GPE_ALTESITUFUNC'],
+  pkGeracao:[{campo:'NRALTESITUFUNC', tabela:'GPE_ALTESITUFUNC', seed:6291}],
+  dicionario:[
+    {col:'(gerado)', rotulo:'Nº sequencial (Busca de PK\'s livres / NOVOCODIGO)', marcador:'@NRALTESITUFUNC@', tabela:'GPE_ALTESITUFUNC', campo:'NRALTESITUFUNC', tipo:'numerico', obrigatorio:false, conversao:'gerado automaticamente', chave:'PK'},
+    {col:'A', rotulo:'Nr Vinculo', marcador:'@NRVINCULOM@', tabela:'GPE_VINCULOM', campo:'NRVINCULOM', tipo:'texto', obrigatorio:true, conversao:'direto (tratado como CDMATRICULA string)', chave:'FK (subquery em GPE_VINCULOM)'},
+    {col:'B', rotulo:'Sit. Funcional', marcador:'@NRSITUFUNCM@', tabela:'GPE_ALTESITUFUNC', campo:'NRSITUFUNCM', tipo:'numerico', obrigatorio:true, conversao:'numeroDecimal', conversaoFn:'numeroDecimal', chave:'FK — domínio de situação funcional (código informado diretamente, sem subquery)', obs:'Validação "Situação funcional existe?" na planilha original.'},
+    {col:'C', rotulo:'Data Inicio', marcador:'@DTINISITUFUNC@', tabela:'GPE_ALTESITUFUNC', campo:'DTINISITUFUNC', tipo:'data', obrigatorio:true, conversao:'dataBR', conversaoFn:'dataBR', chave:''},
+    {col:'D', rotulo:'Data Fim', marcador:'@DTFIMSITUFUNC@', tabela:'GPE_ALTESITUFUNC', campo:'DTFIMSITUFUNC', tipo:'data', obrigatorio:false, conversao:'dataBR', conversaoFn:'dataBR', chave:''},
+    {col:'E', rotulo:'CDTABECDI', marcador:'@CDTABECDI@', tabela:'GPE_ALTESITUFUNC', campo:'CDTABECDI', tipo:'texto', obrigatorio:false, conversao:'trim', conversaoFn:'trim', chave:'', obs:'Ex.: "CID10" — tabela de classificação do diagnóstico.'},
+    {col:'F', rotulo:'CDDIAGNOST', marcador:'@CDDIAGNOST@', tabela:'GPE_ALTESITUFUNC', campo:'CDDIAGNOST', tipo:'texto', obrigatorio:false, conversao:'trim', conversaoFn:'trim', chave:'', obs:'Código do diagnóstico na tabela indicada em CDTABECDI (ex.: código CID).'},
+  ],
+  scriptTemplateManual:"INSERT INTO GPE_ALTESITUFUNC ( NRALTESITUFUNC, NRORG, NRSITUFUNCM, NRVINCULOM, DTINISITUFUNC, DTFIMSITUFUNC, CDTABECDI, CDDIAGNOST, DTINCLUSAO, NRORGINCLUSAO, CDOPERINCLUSAO ) VALUES ( @NRALTESITUFUNC@, @NRORG@, @NRSITUFUNCM@, ( SELECT /*MAX(*/ NRVINCULOM /*)*/ FROM GPE_VINCULOM WHERE NRORG = @NRORG@ AND CDMATRICULA = '@NRVINCULOM@' ), '@DTINISITUFUNC@', '@DTFIMSITUFUNC@', '@CDTABECDI@', '@CDDIAGNOST@', SYSDATE, @NRORG@, '000000099991' ); COMMIT;",
+};
+
+TEMPLATE_CATALOG.ferias = {
+  id:'ferias', nome:'Férias e Gozo de Férias', arquivoExemplo:'10_Ferias_(padrão)_v07.xlsx',
+  formato:'XLSX', sheetName:'Dados', headerRow:2, dataStartRow:3,
+  operacoesPermitidas:['INCLUSAO'],
+  tabelas:['FPA_FERIAS','FPA_GOZOFERIAS'],
+  pkGeracao:[
+    {campo:'NRFERIAS', tabela:'FPA_FERIAS', seed:0},
+    {campo:'NRGOZOFERIAS', tabela:'FPA_GOZOFERIAS', seed:0},
+  ],
+  dicionario:[
+    {col:'(gerado)', rotulo:'Nº sequencial período aquisitivo (Busca de PK\'s livres)', marcador:'@NRFERIAS@', tabela:'FPA_FERIAS', campo:'NRFERIAS', tipo:'numerico', obrigatorio:false, conversao:'gerado automaticamente', chave:'PK'},
+    {col:'(gerado)', rotulo:'Nº sequencial período de gozo (Busca de PK\'s livres)', marcador:'@NRGOZOFERIAS@', tabela:'FPA_GOZOFERIAS', campo:'NRGOZOFERIAS', tipo:'numerico', obrigatorio:false, conversao:'gerado automaticamente', chave:'PK'},
+    {col:'A', rotulo:'VÍNCULO', marcador:'@NRVINCULOM@', tabela:'GPE_VINCULOM', campo:'NRVINCULOM', tipo:'texto', obrigatorio:true, conversao:'direto (CDMATRICULA)', chave:'FK (subquery em GPE_VINCULOM)'},
+    {col:'B', rotulo:'INÍCIO AQUISIÇÃO', marcador:'@DTINIAQUISICAO@', tabela:'FPA_FERIAS', campo:'DTINIAQUISICAO', tipo:'data', obrigatorio:true, conversao:'dataBR', conversaoFn:'dataBR', chave:'compõe hash de deduplicação do período aquisitivo'},
+    {col:'C', rotulo:'FIM AQUISIÇÃO', marcador:'@DTFIMAQUISICAO@', tabela:'FPA_FERIAS', campo:'DTFIMAQUISICAO', tipo:'data', obrigatorio:true, conversao:'dataBR', conversaoFn:'dataBR', chave:''},
+    {col:'D', rotulo:'MÊS AFASTAMENTO', marcador:'@QTMESAFASTAMENT@', tabela:'FPA_FERIAS', campo:'QTMESAFASTAMENT', tipo:'numerico', obrigatorio:false, conversao:'numeroDecimal', conversaoFn:'numeroDecimal', chave:''},
+    {col:'E', rotulo:'STATUS FÉRIAS', marcador:'@IDCONTROLFERIAS@', tabela:'FPA_FERIAS', campo:'IDCONTROLFERIAS', tipo:'texto', obrigatorio:false, conversao:'upper+trim (ex.: GOZADO_INTEGRAL)', conversaoFn:'trim', chave:''},
+    {col:'F', rotulo:'DIAS AFASTAMENTO', marcador:'—', tabela:'—', campo:'—', tipo:'numerico', obrigatorio:false, conversao:'—', chave:'', obs:'Coluna presente na planilha mas sem marcador confirmado no INSERT principal capturado — provavelmente usada apenas na lógica interna de status.'},
+    {col:'G', rotulo:'INICIO GOZO', marcador:'@DTINIGOZOFERIAS@', tabela:'FPA_GOZOFERIAS', campo:'DTINIGOZOFERIAS', tipo:'data', obrigatorio:false, conversao:'dataBR; vazio => sem período de gozo nesta linha', conversaoFn:'dataBR', chave:'compõe hash de deduplicação do gozo'},
+    {col:'H', rotulo:'FIM GOZO', marcador:'@DTFIMGOZOFERIAS@', tabela:'FPA_GOZOFERIAS', campo:'DTFIMGOZOFERIAS', tipo:'data', obrigatorio:false, conversao:'dataBR', conversaoFn:'dataBR', chave:''},
+    {col:'I', rotulo:'DT RETORNO FÉRIAS', marcador:'@DTRETORNOFERIAS@', tabela:'FPA_GOZOFERIAS', campo:'DTRETORNOFERIAS', tipo:'data', obrigatorio:false, conversao:'dataBR', conversaoFn:'dataBR', chave:''},
+    {col:'J', rotulo:'DIAS ABONO', marcador:'@QTDIASABONOFERI@', tabela:'FPA_GOZOFERIAS', campo:'QTDIASABONOFERI', tipo:'numerico', obrigatorio:false, conversao:'numeroDecimal', conversaoFn:'numeroDecimal', chave:''},
+    {col:'K', rotulo:'DIAS FALTAS MÊS', marcador:'@QTFALTASPERIODO@', tabela:'FPA_FERIAS', campo:'QTFALTASPERIODO', tipo:'numerico', obrigatorio:false, conversao:'numeroDecimal', conversaoFn:'numeroDecimal', chave:''},
+  ],
+  obsGeral:'Única planilha do lote com relação 1-para-N real (um período aquisitivo de férias pode ter um período de gozo associado). Arquivo real fornecido continha 2.162 linhas de dados de produção. Simplificação do protótipo: a planilha original insere os dois períodos de forma independente e condicional (hash de deduplicação separado para aquisitivo e para gozo, evitando duplicar férias já migradas); o motor genérico deste protótipo sempre gera as duas instruções INSERT por linha.',
+  scriptTemplateManual:"INSERT INTO FPA_FERIAS ( NRFERIAS, NRVINCULOM, NRTIPOFERIAS, NRORG, DTINIAQUISICAO, DTFIMAQUISICAO, QTMESAFASTAMENT, QTFALTASPERIODO, DTINCLUSAO, NRORGINCLUSAO, CDOPERINCLUSAO, IDCONTROLFERIAS ) VALUES ( @NRFERIAS@, ( SELECT /*MAX(*/NRVINCULOM/*)*/ FROM GPE_VINCULOM WHERE NRORG = @NRORG@ AND CDMATRICULA = '@NRVINCULOM@' ), '1', @NRORG@, '@DTINIAQUISICAO@', '@DTFIMAQUISICAO@', '@QTMESAFASTAMENT@', '@QTFALTASPERIODO@', SYSDATE, @NRORG@, '000000099991', '@IDCONTROLFERIAS@' ); INSERT INTO FPA_GOZOFERIAS ( NRGOZOFERIAS, NRFERIAS, NRORG, DTINIGOZOFERIAS, DTFIMGOZOFERIAS, QTDIASABONOFERI, DTRETORNOFERIAS, DTINCLUSAO, NRORGINCLUSAO, CDOPERINCLUSAO, DSGOZOFERIAS ) VALUES ( @NRGOZOFERIAS@, @NRFERIAS@, @NRORG@, '@DTINIGOZOFERIAS@', '@DTFIMGOZOFERIAS@', '@QTDIASABONOFERI@', '@DTRETORNOFERIAS@', SYSDATE, @NRORG@, '000000099991', 'Migrado' ); COMMIT;",
+};
+
+TEMPLATE_CATALOG.eventos = {
+  id:'eventos', nome:'Eventos de Folha (catálogo + de-para)', arquivoExemplo:'11_Eventos_v08_.xlsx',
+  formato:'XLSX', sheetName:'Dados', headerRow:2, dataStartRow:3,
+  operacoesPermitidas:['INCLUSAO'],
+  tabelas:['FPA_EVENTOM','FPA_EVENTOH','MIG_MIGRAMDEPARA'],
+  pkGeracao:[
+    {campo:'NREVENTOM', tabela:'FPA_EVENTOM', seed:100073312},
+    {campo:'NREVENTOH', tabela:'FPA_EVENTOH', seed:100072812},
+    {campo:'NRMIGRAMDEPARA', tabela:'MIG_MIGRAMDEPARA', seed:0},
+  ],
+  dicionario:[
+    {col:'(gerado)', rotulo:'Nº sequencial evento mestre (Busca de PK\'s livres)', marcador:'@NREVENTOM@', tabela:'FPA_EVENTOM', campo:'NREVENTOM', tipo:'numerico', obrigatorio:false, conversao:'gerado automaticamente', chave:'PK'},
+    {col:'(gerado)', rotulo:'Nº sequencial evento histórico (Busca de PK\'s livres)', marcador:'@NREVENTOH@', tabela:'FPA_EVENTOH', campo:'NREVENTOH', tipo:'numerico', obrigatorio:false, conversao:'gerado automaticamente', chave:'PK'},
+    {col:'(gerado)', rotulo:'Nº sequencial de-para (Busca de PK\'s livres)', marcador:'@NRMIGRAMDEPARA@', tabela:'MIG_MIGRAMDEPARA', campo:'NRMIGRAMDEPARA', tipo:'numerico', obrigatorio:false, conversao:'gerado automaticamente', chave:'PK'},
+    {col:'A', rotulo:'Data Início', marcador:'@DTINIVIGENCIA@', tabela:'FPA_EVENTOM', campo:'DTINIVIGENCIA', tipo:'data', obrigatorio:true, conversao:'dataBR', conversaoFn:'dataBR', chave:''},
+    {col:'B', rotulo:'Tipo Evento', marcador:'@IDTIPOEVENTO@', tabela:'FPA_EVENTOH', campo:'IDTIPOEVENTO', tipo:'texto', obrigatorio:true, conversao:'trim (ex.: PROVENTO, DESCONTO)', conversaoFn:'trim', chave:''},
+    {col:'C', rotulo:'Mês Competencia', marcador:'@DTMESCOMPETENC@', tabela:'FPA_EVENTOH', campo:'DTMESCOMPETENC', tipo:'data', obrigatorio:true, conversao:'dataBR', conversaoFn:'dataBR', chave:''},
+    {col:'D', rotulo:'Descrição', marcador:'@NMEVENTOH@', tabela:'FPA_EVENTOH', campo:'NMEVENTOH', tipo:'texto', obrigatorio:true, conversao:'trim', conversaoFn:'trim', chave:''},
+    {col:'E', rotulo:'Nr Evento Pebbian (HCM)', marcador:'@NRDE@', tabela:'MIG_MIGRAMDEPARA', campo:'NRDE', tipo:'texto', obrigatorio:false, conversao:'direto', chave:'', obs:'Se vazio, a planilha original entende que o evento é novo e cria FPA_EVENTOM/FPA_EVENTOH; se preenchido, reaproveita o evento já existente no HCM e gera apenas o de-para.'},
+    {col:'F', rotulo:'Nr Evento Cliente', marcador:'@NRPARA@', tabela:'MIG_MIGRAMDEPARA', campo:'NRPARA', tipo:'texto', obrigatorio:true, conversao:'direto', chave:'código do cliente a ser mapeado para o código HCM'},
+  ],
+  obsGeral:'Única planilha do lote que não migra dados de um funcionário — migra o catálogo de eventos de folha (proventos/descontos) e o mapeamento "de-para" entre o código do cliente e o código HCM. É pré-requisito funcional da Ficha Financeira (planilha 13), que resolve @NREVENTO@ via MIG_MIGRAMDEPARA. Simplificação do protótipo: a planilha original só cria o evento (FPA_EVENTOM/FPA_EVENTOH) quando "Nr Evento Pebbian" está vazio; o motor genérico deste protótipo sempre gera as três instruções.',
+  scriptTemplateManual:"INSERT INTO FPA_EVENTOM ( NREVENTOM, DTINIVIGENCIA, NRORG, DTINCLUSAO, NRORGINCLUSAO, CDOPERINCLUSAO, IDTIPOEVENTO ) VALUES ( @NREVENTOM@, '@DTINIVIGENCIA@', @NRORG@, SYSDATE, @NRORG@, '000000099991', '@IDTIPOEVENTO@' ); INSERT INTO FPA_EVENTOH ( NREVENTOH, NREVENTOM, DTMESCOMPETENC, IDIMPRESSEVENTO, IDTIPOOCORREVEN, IDEVENTODEMONST, IDRETROCEDEVENT, IDZERAEVENFECHA, CDINTEGRAEVENTO, IDMEDIAEVENFERI, IDFALTAS13RESC, DTINCLUSAO, NRORGINCLUSAO, CDOPERINCLUSAO, NMEVENTOH, IDDTOCORRENCIA, NRORG, VRPISOEVENTO, VRTETOEVENTO, IDATIVO ) VALUES ( @NREVENTOH@, @NREVENTOM@, '@DTMESCOMPETENC@', 'S', 'EVENTUAL', 'N', 'SEMPRE', 'N', '@NRDE@', 'N', 'N', SYSDATE, @NRORG@, '000000099991', '@NMEVENTOH@', 'COMPETENCIA', @NRORG@, 0, 9999999999, 'S' ); INSERT INTO MIG_MIGRAMDEPARA ( NRMIGRAMDEPARA, NMTABELADBF, NRORG, NRPARA, NRDE ) VALUES ( @NRMIGRAMDEPARA@, 'EVENTO', @NRORG@, @NRPARA@, '@NRDE@' ); COMMIT;",
+};
+
+TEMPLATE_CATALOG.movimentacoesEstrutura = {
+  id:'movimentacoesEstrutura', nome:'Movimentações de Estrutura (transferências)', arquivoExemplo:'12_MovimentacoesEstrutura_v07.xlsx',
+  formato:'XLSX', sheetName:'Dados', headerRow:2, dataStartRow:3,
+  operacoesPermitidas:['INCLUSAO'],
+  tabelas:['GPE_MOVIMENTACAO'],
+  pkGeracao:[{campo:'NRMOVIMENTACAO', tabela:'GPE_MOVIMENTACAO', seed:36640}],
+  dicionario:[
+    {col:'(gerado)', rotulo:'Nº sequencial (Busca de PK\'s livres / NOVOCODIGO)', marcador:'@NRMOVIMENTACAO@', tabela:'GPE_MOVIMENTACAO', campo:'NRMOVIMENTACAO', tipo:'numerico', obrigatorio:false, conversao:'gerado automaticamente', chave:'PK'},
+    {col:'A', rotulo:'Nr Vínculo', marcador:'@NRVINCULOM@', tabela:'GPE_VINCULOM', campo:'NRVINCULOM', tipo:'texto', obrigatorio:true, conversao:'direto (CDMATRICULA)', chave:'FK (subquery em GPE_VINCULOM)', obs:'Validação "Existe vínculo?" na planilha original.'},
+    {col:'B', rotulo:'Nr Tipo Transferência', marcador:'@NRTIPOTRANSFER@', tabela:'GPE_MOVIMENTACAO', campo:'NRTIPOTRANSFER', tipo:'numerico', obrigatorio:true, conversao:'numeroDecimal', conversaoFn:'numeroDecimal', chave:''},
+    {col:'C', rotulo:'Nr Motivo Transferência (código)', marcador:'@NRTPMOVTRANSFM@', tabela:'GPE_MOVIMENTACAO', campo:'NRTPMOVTRANSFM', tipo:'numerico', obrigatorio:true, conversao:'numeroDecimal', conversaoFn:'numeroDecimal', chave:''},
+    {col:'D', rotulo:'Nr Estrutura', marcador:'@NRESTRUTURAM@', tabela:'ESTRUTURAM', campo:'NRESTRUTURAM', tipo:'texto', obrigatorio:true, conversao:'direto (código de integração)', chave:'FK (subquery em ESTRUTURAM)', obs:'Validação "Existe estrutura?" contra planilha 01_Estrutura já migrada.'},
+    {col:'E', rotulo:'Obervação', marcador:'@DSOBSERVACAO@', tabela:'GPE_MOVIMENTACAO', campo:'DSOBSERVACAO', tipo:'texto', obrigatorio:false, conversao:'trim', conversaoFn:'trim', chave:''},
+    {col:'F', rotulo:'Dt Fim Movimentação', marcador:'@DTFIMMOVIMENT@', tabela:'GPE_MOVIMENTACAO', campo:'DTFIMMOVIMENT', tipo:'data', obrigatorio:false, conversao:'dataBR', conversaoFn:'dataBR', chave:''},
+    {col:'G', rotulo:'Dt Início Movimentação', marcador:'@DTINIMOVIMENT@', tabela:'GPE_MOVIMENTACAO', campo:'DTINIMOVIMENT', tipo:'data', obrigatorio:true, conversao:'dataBR', conversaoFn:'dataBR', chave:''},
+    {col:'H', rotulo:'Nr Tipo Estrutura', marcador:'@NRTIPOESTRUTURA@', tabela:'GPE_MOVIMENTACAO', campo:'NRTIPOESTRUTURA', tipo:'numerico', obrigatorio:false, conversao:'numeroDecimal', conversaoFn:'numeroDecimal', chave:''},
+    {col:'I', rotulo:'Dt Mov Retroativa', marcador:'@DTMOVIMENTRETRO@', tabela:'GPE_MOVIMENTACAO', campo:'DTMOVIMENTRETRO', tipo:'data', obrigatorio:false, conversao:'dataBR', conversaoFn:'dataBR', chave:''},
+    {col:'J', rotulo:'Motivo da Transferência (texto)', marcador:'@NRMOTIVOTRANSF@', tabela:'GPE_MOVIMENTACAO', campo:'NRMOTIVOTRANSF', tipo:'numerico', obrigatorio:false, conversao:'numeroDecimal', conversaoFn:'numeroDecimal', chave:''},
+  ],
+  obsGeral:'Registra o histórico de transferências de estrutura (departamento/centro de custo/filial) de cada vínculo — depende de Vínculo (04) e Estrutura (01) já migrados.',
+  scriptTemplateManual:"INSERT INTO GPE_MOVIMENTACAO ( NRMOVIMENTACAO, NRORG, NRVINCULOM, NRTIPOTRANSFER, NRTPMOVTRANSFM, NRESTRUTURAM, DTINIMOVIMENT, DTFIMMOVIMENT, DSOBSERVACAO, DTINCLUSAO, NRORGINCLUSAO, CDOPERINCLUSAO, NRTIPOESTRUTURA, DTMOVIMENTRETRO, NRMOTIVOTRANSF ) VALUES ( @NRMOVIMENTACAO@, @NRORG@, ( SELECT /*MAX(*/ NRVINCULOM /*)*/ FROM GPE_VINCULOM WHERE NRORG = @NRORG@ AND CDMATRICULA = '@NRVINCULOM@' ), @NRTIPOTRANSFER@, @NRTPMOVTRANSFM@, ( SELECT MAX( NRESTRUTURAM ) FROM ESTRUTURAM WHERE NRORG = @NRORG@ AND CDINTESTRUTURA = '@NRESTRUTURAM@' ), '@DTINIMOVIMENT@', '@DTFIMMOVIMENT@', '@DSOBSERVACAO@', SYSDATE, @NRORG@, '000000099991', @NRTIPOESTRUTURA@, '@DTMOVIMENTRETRO@', '@NRMOTIVOTRANSF@' ); COMMIT;",
+};
+
+TEMPLATE_CATALOG.fichaFinanceira = {
+  id:'fichaFinanceira', nome:'Ficha Financeira (histórico de proventos/descontos)', arquivoExemplo:'13_FichaFinanceira_v15.xlsx',
+  formato:'XLSX', sheetName:'Dados', headerRow:2, dataStartRow:3,
+  operacoesPermitidas:['INCLUSAO'],
+  tabelas:['FPA_ITECALCFOLHA'],
+  pkGeracao:[{campo:'NRITEMCALCFOLHA', tabela:'FPA_ITECALCFOLHA', seed:0}],
+  dicionario:[
+    {col:'(gerado)', rotulo:'Nº sequencial do item (Busca de PK\'s livres / NOVOCODIGO)', marcador:'@NRO@', tabela:'FPA_ITECALCFOLHA', campo:'NRITEMCALCFOLHA', tipo:'numerico', obrigatorio:false, conversao:'gerado automaticamente', chave:'PK'},
+    {col:'A', rotulo:'Tp Movimento', marcador:'@NRTIPOMOVIMENT@', tabela:'FPA_ITECALCFOLHA', campo:'NRTIPOMOVIMENT', tipo:'numerico', obrigatorio:true, conversao:'numeroDecimal', conversaoFn:'numeroDecimal', chave:''},
+    {col:'B', rotulo:'Nr. Vínculo', marcador:'@CDMATRICULA@', tabela:'GPE_VINCULOM', campo:'CDMATRICULA', tipo:'texto', obrigatorio:true, conversao:'trim (zero-fill configurável, conforme aba Base)', conversaoFn:'trim', chave:'FK (subquery em GPE_VINCULOM)'},
+    {col:'C', rotulo:'Competência', marcador:'@DTMESCOMPETENC@', tabela:'FPA_CALCULOFOLHA', campo:'DTMESCOMPETENC', tipo:'data', obrigatorio:true, conversao:'dataBR (dia fixo 01)', conversaoFn:'dataBR', chave:'compõe a busca do cálculo de folha (FPA_CALCULOFOLHA) — deve já existir para NRORG+NRTIPOMOVIMENT+competência.'},
+    {col:'D', rotulo:'Nr. Evento', marcador:'@NREVENTO@', tabela:'MIG_MIGRAMDEPARA', campo:'NREVENTO', tipo:'texto', obrigatorio:true, conversao:'direto', chave:'FK (subquery em MIG_MIGRAMDEPARA — depende da planilha 11_Eventos já migrada)'},
+    {col:'E', rotulo:'Valor', marcador:'@VREVENTOFOLHA@', tabela:'FPA_ITECALCFOLHA', campo:'VREVENTOFOLHA', tipo:'monetario', obrigatorio:true, conversao:'numeroDecimal (vírgula → ponto)', conversaoFn:'numeroDecimal', chave:''},
+    {col:'F', rotulo:'Descrição do Cálculo', marcador:'@DSITEMCALCFOLHA@', tabela:'FPA_ITECALCFOLHA', campo:'DSITEMCALCFOLHA', tipo:'texto', obrigatorio:false, conversao:'remove caracteres especiais', conversaoFn:'trim', chave:''},
+    {col:'G', rotulo:'Data de Ocorrência', marcador:'@DTOCORRENCIA@', tabela:'FPA_ITECALCFOLHA', campo:'DTOCORRENCIA', tipo:'data', obrigatorio:false, conversao:'dataBR; vazio => usa 1º dia da competência', conversaoFn:'dataBR', chave:''},
+    {col:'H', rotulo:'Valor de Referencia', marcador:'@VRREFFOLHA@', tabela:'FPA_ITECALCFOLHA', campo:'VRREFFOLHA', tipo:'numerico', obrigatorio:false, conversao:'numeroDecimal; vazio => NULL', conversaoFn:'numeroDecimal', chave:''},
+  ],
+  obsGeral:'Migração mais dependente de todo o lote: exige que já exista um "cálculo de folha" (FPA_CALCULOFOLHA) para a organização/tipo de movimento/competência de cada linha — a planilha original inclui uma query de verificação e outra de criação desse cabeçalho, que devem ser executadas antes da carga dos itens. A planilha real possui 4 variantes de template (identificação do vínculo por matrícula ou por NRVINCULOM direto; identificação do evento por de-para ou por NREVENTOM direto, ver aba "Scripts") — o protótipo usa a variante mais comum (matrícula + de-para). Aba "Base" do arquivo original continha 1.527 linhas de referência de cálculos já existentes.',
+  scriptTemplateManual:"INSERT INTO FPA_ITECALCFOLHA ( NRITEMCALCFOLHA, NRCALCULOFOLHA, NRVINCULOM, NREVENTOM, NRORG, IDEVENDEMONCALC, VRREFFOLHA, VREVENTOFOLHA, IDREFEVALORCALC, DTINCLUSAO, DTOCORRENCIA, DSITEMCALCFOLHA, QTOCORPROXPERI ) VALUES ( @NRO@, ( SELECT MAX(NRCALCULOFOLHA) FROM FPA_CALCULOFOLHA WHERE NRORG = @NRORG@ AND NRTIPOMOVIMENT = @NRTIPOMOVIMENT@ AND DTOCORRENCIA = '@DTMESCOMPETENC@' AND NRTPMODALIDCAL = 1 AND NROCORRECAL = 1 ), ( SELECT /*MAX(*/ NRVINCULOM /*)*/ FROM GPE_VINCULOM WHERE NRORG = @NRORG@ AND CDMATRICULA = '@CDMATRICULA@' ), ( SELECT MAX(NRPARA) FROM MIG_MIGRAMDEPARA WHERE NRORG = @NRORG@ AND NRDE = '@NREVENTO@' ), @NRORG@, 'N', @VRREFFOLHA@, @VREVENTOFOLHA@, 'REFERENCIA_VALOR', SYSDATE, '@DTOCORRENCIA@', '@DSITEMCALCFOLHA@', 1 ); COMMIT;",
+};
+
+/* liga o motor genérico (leitura/validação/geração via dicionário + scriptTemplateManual)
+   nas 8 planilhas adicionadas acima — mesmo mecanismo já usado por templates criados via
+   cadastro na UI (Seção 2 / Seção 26 do documento de especificação). */
+function ligarMotorGenerico(tid){
+  const tpl = TEMPLATE_CATALOG[tid];
+  tpl.lerLinha = (row) => lerLinhaGenerica(tpl, row);
+  tpl.validarLinha = (campos, ctx) => validarLinhaGenerica(tpl, campos);
+  tpl.gerarInsert = (campos, ctx, pk) => gerarInsertGenerica(tpl, campos, ctx, pk);
+}
+['alteracaoSalarial','alteracaoEscala','alteracaoOcupacao','situacaoFuncional','ferias','eventos','movimentacoesEstrutura','fichaFinanceira'].forEach(ligarMotorGenerico);
+
+/* =========================================================================
+   10) TIPOS DE MIGRAÇÃO — "Migração Integral do Cliente" (13 planilhas)
+   ========================================================================= */
+TIPOS_MIGRACAO.push(
+  {
+    id:'MIG_INTEGRAL_INDIVIDUAL',
+    nome:'Migração Integral do Cliente — 13 Templates (importação individual)',
+    descricao:'Todas as 13 planilhas hoje usadas em uma migração completa de cliente (cadastral + movimentações + financeiro) — cada template pode ser importado de forma independente, sem sequência obrigatória travada. Indicado para operação corrente (pós-implantação).',
+    bancosSuportados:['ORACLE','POSTGRESQL','SQLSERVER','MYSQL'],
+    sequenciaObrigatoria:false,
+    templates:['agencias','estrutura','ocupacao','escala','eventos','vinculo','alteracaoSalarial','alteracaoEscala','alteracaoOcupacao','situacaoFuncional','ferias','movimentacoesEstrutura','fichaFinanceira'],
+  },
+  {
+    id:'MIG_INTEGRAL_ONBOARDING',
+    nome:'Migração Integral do Cliente — Implantação Completa (sequência travada)',
+    descricao:'Mesmas 13 planilhas, com dependência obrigatória entre templates — uso recomendado para implantação de um cliente novo, onde a ordem de carga é crítica (ex.: Vínculo só libera após Agências + Estrutura + Ocupação + Escala; Ficha Financeira só libera após Vínculo + Eventos).',
+    bancosSuportados:['ORACLE'],
+    sequenciaObrigatoria:true,
+    templates:['agencias','estrutura','ocupacao','escala','eventos','vinculo','alteracaoSalarial','alteracaoEscala','alteracaoOcupacao','situacaoFuncional','ferias','movimentacoesEstrutura','fichaFinanceira'],
+    dependencias:{
+      vinculo:['agencias','estrutura','ocupacao','escala'],
+      alteracaoSalarial:['vinculo'],
+      alteracaoEscala:['vinculo','escala'],
+      alteracaoOcupacao:['vinculo','ocupacao'],
+      situacaoFuncional:['vinculo'],
+      ferias:['vinculo'],
+      movimentacoesEstrutura:['vinculo','estrutura'],
+      fichaFinanceira:['vinculo','eventos'],
+    },
+  }
+);
+
+/* =========================================================================
+   11) DADOS MOCK + MIGRAÇÃO SEED demonstrando o tipo "Migração Integral"
+   ========================================================================= */
+Object.assign(MOCK_LINHAS, {
+  alteracaoSalarial: [
+    {CDMATRICULA:'010000-0-00189', DTALTESALARIO:'01/11/2013', NROCORRENCIA:1, NRTIPOALTERA:'2', VRSALARIO:'4400', IDTPSALARIO:'MENSAL', DSOBSERVACAO:'Reajuste salarial'},
+    {CDMATRICULA:'010000-0-00189', DTALTESALARIO:'02/04/2007', NROCORRENCIA:1, NRTIPOALTERA:'1', VRSALARIO:'2300', IDTPSALARIO:'MENSAL', DSOBSERVACAO:'Salario de admissao'},
+  ],
+  alteracaoEscala: [
+    {NRVINCULOM:'213078', DTINIESCALA:'01/12/2023', NRESCALATRABM:2001},
+  ],
+  alteracaoOcupacao: [
+    {VINC:'003.01.863751', DTINIOCUPACAO:'02/03/2026', NROCUPA:'910'},
+  ],
+  situacaoFuncional: [
+    {NRVINCULOM:'100006', NRSITUFUNCM:1, DTINISITUFUNC:'10/12/2025', DTFIMSITUFUNC:'13/12/2025', CDTABECDI:'CID10', CDDIAGNOST:'M510'},
+  ],
+  ferias: [
+    {NRVINCULOM:'2_287', DTINIAQUISICAO:'14/01/2021', DTFIMAQUISICAO:'13/01/2022', QTMESAFASTAMENT:'', IDCONTROLFERIAS:'GOZADO_INTEGRAL', DTINIGOZOFERIAS:'08/08/2022', DTFIMGOZOFERIAS:'27/08/2022', DTRETORNOFERIAS:'28/08/2022', QTDIASABONOFERI:10, QTFALTASPERIODO:0},
+  ],
+  eventos: [
+    {DTINIVIGENCIA:'01/01/2000', IDTIPOEVENTO:'PROVENTO', DTMESCOMPETENC:'01/01/2000', NMEVENTOH:'Salario Mes', NRDE:'10', NRPARA:'001'},
+  ],
+  movimentacoesEstrutura: [
+    {NRVINCULOM:'2001_11', NRTIPOTRANSFER:'2', NRTPMOVTRANSFM:'2', NRESTRUTURAM:'1CC2.103', DSOBSERVACAO:'', DTFIMMOVIMENT:'', DTINIMOVIMENT:'08/08/2003', NRTIPOESTRUTURA:'121', DTMOVIMENTRETRO:'', NRMOTIVOTRANSF:''},
+  ],
+  fichaFinanceira: [
+    {NRTIPOMOVIMENT:1, CDMATRICULA:'122_224', DTMESCOMPETENC:'01/01/2019', NREVENTO:'8785', VREVENTOFOLHA:'1081.5', DSITEMCALCFOLHA:'DIAS AFAST.INSS (P/DOENCA)', DTOCORRENCIA:'01/01/2019', VRREFFOLHA:'30'},
+  ],
+});
+
+(()=>{
+  const m5 = novaMigracaoBase('MG-1005','3260','MIG_INTEGRAL_INDIVIDUAL','ORACLE','Beatriz Nunes','em validacao');
+  m5.criadoEmDate = new Date(Date.now() - 1*24*60*60*1000); m5.criadoEm = m5.criadoEmDate.toLocaleString('pt-BR');
+  semearTemplate(m5, 'agencias', MOCK_LINHAS.agencias.slice(0,1));
+  semearTemplate(m5, 'estrutura', MOCK_LINHAS.estrutura);
+  semearTemplate(m5, 'ocupacao', MOCK_LINHAS.ocupacao);
+  semearTemplate(m5, 'escala', MOCK_LINHAS.escala);
+  semearTemplate(m5, 'eventos', MOCK_LINHAS.eventos, {comScript:true, scriptAprovado:true, aplicado:true});
+  semearTemplate(m5, 'alteracaoSalarial', MOCK_LINHAS.alteracaoSalarial, {comScript:true});
+  semearTemplate(m5, 'alteracaoEscala', MOCK_LINHAS.alteracaoEscala, {comScript:true});
+  semearTemplate(m5, 'alteracaoOcupacao', MOCK_LINHAS.alteracaoOcupacao);
+  semearTemplate(m5, 'situacaoFuncional', MOCK_LINHAS.situacaoFuncional);
+  semearTemplate(m5, 'ferias', MOCK_LINHAS.ferias);
+  semearTemplate(m5, 'movimentacoesEstrutura', MOCK_LINHAS.movimentacoesEstrutura);
+  semearTemplate(m5, 'fichaFinanceira', MOCK_LINHAS.fichaFinanceira);
+  m5.trilha.push(
+    {evento:'Templates validados (parcial)', usuario:m5.operador, data:m5.criadoEm},
+    {evento:'Dados aprovados — Eventos de Folha', usuario:m5.operador, data:m5.criadoEm},
+    {evento:'Script aprovado — Eventos de Folha', usuario:m5.operador, data:m5.criadoEm},
+    {evento:'Script aplicado — Eventos de Folha', usuario:m5.operador, data:m5.criadoEm}
+  );
+  MIGRACOES.push(m5);
+})();
+
+renderAll();
+</script>
+</body>
+</html>
