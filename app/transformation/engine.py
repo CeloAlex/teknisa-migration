@@ -25,7 +25,10 @@ def aplicar_transformacoes(
             valor_bruto = contexto.get(campo_meta.origem.removeprefix("parametro_execucao."))
         else:
             valor_bruto = linha_bruta.get(campo_meta.origem)
-        campos[campo_meta.campo] = aplicar_conversao(valor_bruto, campo_meta)
+        valor = aplicar_conversao(valor_bruto, campo_meta)
+        if (valor is None or valor == "") and campo_meta.valor_padrao is not None:
+            valor = campo_meta.valor_padrao
+        campos[campo_meta.campo] = valor
 
     for campo_meta in derivados:
         valores_referenciados = [campos.get(nome) for nome in campo_meta.campos_referenciados]

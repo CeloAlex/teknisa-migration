@@ -104,6 +104,16 @@ def test_nenhum_vazio_false_quando_algum_vazio() -> None:
     assert aplicar_conversao(["OUTROS", ""], campo) is False
 
 
+def test_esta_vazio_true_quando_campo_vazio() -> None:
+    campo = _campo(regra_conversao="esta_vazio")
+    assert aplicar_conversao([""], campo) is True
+
+
+def test_esta_vazio_false_quando_campo_preenchido() -> None:
+    campo = _campo(regra_conversao="esta_vazio")
+    assert aplicar_conversao(["10"], campo) is False
+
+
 def test_primeiro_nao_vazio_pula_valores_vazios() -> None:
     campo = _campo(regra_conversao="primeiro_nao_vazio")
     assert aplicar_conversao(["", None, "Nome Fantasia", "Razão Social"], campo) == "Nome Fantasia"
@@ -122,3 +132,14 @@ def test_cbo_remove_pontuacao() -> None:
 def test_cbo_vazio_vira_literal_null() -> None:
     campo = _campo(regra_conversao="cbo")
     assert aplicar_conversao("", campo) == "NULL"
+
+
+def test_numero_ou_null_vazio_vira_literal_null() -> None:
+    campo = _campo(regra_conversao="numero_ou_null")
+    assert aplicar_conversao("", campo) == "NULL"
+    assert aplicar_conversao(None, campo) == "NULL"
+
+
+def test_numero_ou_null_preenchido_troca_virgula_por_ponto() -> None:
+    campo = _campo(regra_conversao="numero_ou_null")
+    assert aplicar_conversao("30,00", campo) == "30.00"

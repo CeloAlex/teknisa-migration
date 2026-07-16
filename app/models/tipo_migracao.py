@@ -37,3 +37,28 @@ class TipoMigracaoTemplate(Base):
 
     tipo_migracao: Mapped["TipoMigracao"] = relationship(back_populates="templates")
     template: Mapped["Template"] = relationship()  # noqa: F821 (referência a app.models.template.Template)
+    dependencias: Mapped[list["TipoMigracaoTemplateDependencia"]] = relationship(
+        back_populates="tipo_migracao_template",
+        foreign_keys="TipoMigracaoTemplateDependencia.tipo_migracao_template_id",
+        cascade="all, delete-orphan",
+    )
+
+
+class TipoMigracaoTemplateDependencia(Base):
+    """Uma aresta do grafo de dependências de um tipo de migração (Seção 26.3): dentro deste
+    tipo de migração, o template de `tipo_migracao_template_id` só libera importação após o
+    template `depende_de_template_id` já estar validado — usado pelo modo "sequência
+    travada" (ex.: Vínculo depende de Agências + Estrutura + Ocupação + Escala)."""
+
+    __tablename__ = "tipo_migracao_template_dependencia"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tipo_migracao_template_id: Mapped[int] = mapped_column(
+        ForeignKey("tipo_migracao_template.id"), index=True
+    )
+    depende_de_template_id: Mapped[int] = mapped_column(ForeignKey("template.id"), index=True)
+
+    tipo_migracao_template: Mapped["TipoMigracaoTemplate"] = relationship(
+        back_populates="dependencias", foreign_keys=[tipo_migracao_template_id]
+    )
+    depende_de_template: Mapped["Template"] = relationship(foreign_keys=[depende_de_template_id])  # noqa: F821

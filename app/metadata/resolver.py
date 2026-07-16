@@ -71,4 +71,6 @@ async def resolver_template(session: AsyncSession, codigo: str) -> TemplateMetad
         data_start_row=template.data_start_row,
         campos=campos,
         scripts=dict(scripts),
+        eh_catalogo=template.eh_catalogo,
+        pre_requisito_externo=template.pre_requisito_externo,
     )

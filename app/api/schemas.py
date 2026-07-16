@@ -24,6 +24,8 @@ class TemplateResponse(BaseModel):
     sheet_name: str | None
     header_row: int | None
     data_start_row: int | None
+    eh_catalogo: bool
+    pre_requisito_externo: str | None
     campos: list[CampoDicionarioResponse]
 
 
@@ -50,3 +52,30 @@ class PreviewResponse(BaseModel):
     rejeitados: int
     alertas: int
     linhas: list[LinhaResultadoResponse]
+
+
+class TipoMigracaoListItemResponse(BaseModel):
+    codigo: str
+    nome: str
+    banco_destino: str
+    sequencia_obrigatoria: bool
+    permite_concorrencia: bool
+    total_templates: int
+
+
+class TipoMigracaoTemplateResponse(BaseModel):
+    ordem: int
+    template_codigo: str
+    template_nome: str
+    obrigatorio: bool
+    depende_de: list[str]
+
+
+class TipoMigracaoResponse(BaseModel):
+    codigo: str
+    nome: str
+    banco_destino: str
+    modo_aplicacao: str
+    sequencia_obrigatoria: bool
+    permite_concorrencia: bool
+    templates: list[TipoMigracaoTemplateResponse]

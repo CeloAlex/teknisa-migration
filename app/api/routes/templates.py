@@ -72,6 +72,8 @@ async def obter_template(codigo: str, db: AsyncSession = Depends(get_db)) -> Tem
         sheet_name=template.sheet_name,
         header_row=template.header_row,
         data_start_row=template.data_start_row,
+        eh_catalogo=template.eh_catalogo,
+        pre_requisito_externo=template.pre_requisito_externo,
         campos=[
             CampoDicionarioResponse(
                 ordem=c.ordem,

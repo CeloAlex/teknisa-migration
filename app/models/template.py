@@ -19,6 +19,16 @@ class Template(Base):
     header_row: Mapped[int | None] = mapped_column(Integer)
     data_start_row: Mapped[int | None] = mapped_column(Integer)
     ativo: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Distingue template de dados transacionais (padrão) de template de catálogo/
+    # parametrização compartilhada pela organização, que outros templates apenas consultam
+    # por FK — ex. Eventos de Folha (Seção 26.4).
+    eh_catalogo: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Pré-requisito externo à migração (Seção 26.2/26.4): um dado que precisa existir
+    # previamente no destino, criado por um processo de negócio fora da plataforma (ex.
+    # Ficha Financeira depende de um "cálculo de folha" já existente). Texto livre exibido
+    # ao operador antes da geração do script — não é (ainda) uma consulta de verificação
+    # executada de fato, pois isso depende da integração com o banco de destino.
+    pre_requisito_externo: Mapped[str | None] = mapped_column(Text)
 
     campos: Mapped[list["TemplateCampo"]] = relationship(
         back_populates="template", order_by="TemplateCampo.ordem", cascade="all, delete-orphan"

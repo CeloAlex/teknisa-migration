@@ -95,12 +95,31 @@ def _primeiro_nao_vazio(valor: Any, campo: CampoMetadata) -> str:
     return ""
 
 
+def _esta_vazio(valor: Any, campo: CampoMetadata) -> bool:
+    """Regra de campo derivado — o inverso de `nenhum_vazio`: recebe a lista de valores dos
+    campos referenciados em `origem="campo:A"` e responde se o (único) campo está vazio.
+    Usado no padrão "catálogo/de-para" de Eventos (Seção 26.4): se o código do evento já
+    existente no HCM não foi informado, o evento é novo e o bloco de INSERT correspondente
+    é disparado."""
+    valores = valor if isinstance(valor, list) else [valor]
+    return any(v in (None, "") for v in valores)
+
+
 def _cbo(valor: Any, campo: CampoMetadata) -> str:
     """CBO (Seção 13.2): sem validação de formato hoje, mas precisa virar o literal `NULL`
     quando vazio, pois o marcador é usado sem aspas no template de script (posição
     numérica) — equivalente a "vazio => NULL; senão remove espaço/./,/-/_ e tab"."""
     texto = _remover_mascara(valor, campo)
     return texto if texto else "NULL"
+
+
+def _numero_ou_null(valor: Any, campo: CampoMetadata) -> str:
+    """Mesma ideia do `cbo`, generalizada para qualquer campo numérico opcional usado sem
+    aspas no template de script (ex. VRREFFOLHA da Ficha Financeira): vazio vira o literal
+    `NULL` em vez de string vazia, que quebraria a posição numérica do INSERT."""
+    if valor in (None, ""):
+        return "NULL"
+    return str(valor).replace(",", ".")
 
 
 # Registro nomeado de regras de conversão (equivalente às fórmulas TRIM/SUBSTITUTE/TEXT das
@@ -116,8 +135,10 @@ CONVERSOES: dict[str, ConversaoFn] = {
     "numero_decimal": _numero_decimal,
     "vazio_para_n": _vazio_para_n,
     "nenhum_vazio": _nenhum_vazio,
+    "esta_vazio": _esta_vazio,
     "primeiro_nao_vazio": _primeiro_nao_vazio,
     "cbo": _cbo,
+    "numero_ou_null": _numero_ou_null,
 }
 
 

@@ -69,3 +69,5 @@ class TemplateMetadata:
     data_start_row: int | None
     campos: list[CampoMetadata]
     scripts: dict[str, list[ScriptMetadata]] = field(default_factory=dict)
+    eh_catalogo: bool = False
+    pre_requisito_externo: str | None = None
