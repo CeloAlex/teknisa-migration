@@ -3,6 +3,7 @@ from typing import Callable, Coroutine
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import text
 
 from app.auth.security import hash_senha
 from app.db.session import AsyncSessionLocal
@@ -22,22 +23,44 @@ async def client() -> AsyncClient:
 async def nr_org_teste() -> int:
     """Organização descartável, com número aleatório — evita que testes de concorrência
     (bloqueio de migração ativa por organização) fiquem acoplados a estado deixado por
-    execuções anteriores da suíte, já que o banco de testes não é resetado entre execuções."""
+    execuções anteriores da suíte. Ao final do teste, apaga a própria organização e tudo
+    que ficou pendurado nela (usuários, migrações e suas dependências) — o banco de testes
+    não é resetado entre execuções, então sem essa limpeza o volume só cresce."""
     nr_org = random.randint(10_000_000, 99_999_999)
     async with AsyncSessionLocal() as session:
         session.add(Organizacao(nr_org=nr_org, nome=f"Organização de Teste {nr_org}"))
         await session.commit()
-    return nr_org
+
+    yield nr_org
+
+    async with AsyncSessionLocal() as session:
+        await session.execute(text("DELETE FROM usuario WHERE nr_org = :nr_org"), {"nr_org": nr_org})
+        await session.execute(
+            text(
+                "DELETE FROM migracao_template_status WHERE migracao_id IN "
+                "(SELECT id FROM migracao WHERE nr_org = :nr_org)"
+            ),
+            {"nr_org": nr_org},
+        )
+        await session.execute(
+            text("DELETE FROM migracao_evento WHERE migracao_id IN (SELECT id FROM migracao WHERE nr_org = :nr_org)"),
+            {"nr_org": nr_org},
+        )
+        await session.execute(text("DELETE FROM migracao WHERE nr_org = :nr_org"), {"nr_org": nr_org})
+        await session.execute(text("DELETE FROM organizacao WHERE nr_org = :nr_org"), {"nr_org": nr_org})
+        await session.commit()
 
 
 SENHA_PADRAO_TESTE = "senha-teste-123"
 
 
 @pytest.fixture
-def usuario_teste() -> Callable[..., Coroutine[None, None, tuple[Usuario, str]]]:
-    """Fábrica de usuário do portal descartável, com e-mail aleatório (mesmo motivo do
-    `nr_org_teste`: o banco de testes nunca é resetado entre execuções). Devolve o objeto
-    `Usuario` já persistido e a senha em texto puro usada para logar via `/portal-migration/login`."""
+async def usuario_teste() -> Callable[..., Coroutine[None, None, tuple[Usuario, str]]]:
+    """Fábrica de usuário do portal descartável, com e-mail aleatório. Ao final do teste,
+    apaga todos os usuários criados por essa fábrica — mesmo motivo do `nr_org_teste`
+    (efeito colateral independente: cobre usuários criados sem organização, ou cujo
+    `nr_org` não veio de `nr_org_teste`)."""
+    criados: list[int] = []
 
     async def _criar(papel: str, nr_org: int | None = None, senha: str = SENHA_PADRAO_TESTE) -> tuple[Usuario, str]:
         sufixo = random.randint(1_000_000, 9_999_999)
@@ -52,9 +75,16 @@ def usuario_teste() -> Callable[..., Coroutine[None, None, tuple[Usuario, str]]]
             session.add(usuario)
             await session.commit()
             await session.refresh(usuario)
+        criados.append(usuario.id)
         return usuario, senha
 
-    return _criar
+    yield _criar
+
+    if criados:
+        async with AsyncSessionLocal() as session:
+            for usuario_id in criados:
+                await session.execute(text("DELETE FROM usuario WHERE id = :id"), {"id": usuario_id})
+            await session.commit()
 
 
 async def login(client: AsyncClient, email: str, senha: str) -> None:

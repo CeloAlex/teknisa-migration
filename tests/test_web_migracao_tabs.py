@@ -4,6 +4,7 @@ from io import BytesIO
 
 from httpx import AsyncClient
 from openpyxl import Workbook
+from sqlalchemy import text
 
 from app.db.session import AsyncSessionLocal
 from app.models.organizacao import Organizacao
@@ -137,3 +138,11 @@ async def test_usuario_de_outra_organizacao_nao_acessa_migracao(
 
     resposta = await client.get(migracao_url)
     assert resposta.status_code == 403
+
+    # Apaga o usuário desta organização antes da própria organização — o teardown da
+    # fábrica `usuario_teste` só roda depois que a função de teste retornar, então não dá
+    # para contar com ele para liberar a FK a tempo aqui dentro do corpo do teste.
+    async with AsyncSessionLocal() as session:
+        await session.execute(text("DELETE FROM usuario WHERE nr_org = :nr_org"), {"nr_org": outro_nr_org})
+        await session.execute(text("DELETE FROM organizacao WHERE nr_org = :nr_org"), {"nr_org": outro_nr_org})
+        await session.commit()

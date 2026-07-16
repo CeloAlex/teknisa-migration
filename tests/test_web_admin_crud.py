@@ -1,7 +1,9 @@
 import random
 
 from httpx import AsyncClient
+from sqlalchemy import text
 
+from app.db.session import AsyncSessionLocal
 from app.models.usuario import Papel
 from tests.conftest import login
 
@@ -9,6 +11,14 @@ from tests.conftest import login
 async def _login_admin(client: AsyncClient, usuario_teste) -> None:
     usuario, senha = await usuario_teste(Papel.ADMINISTRADOR.value)
     await login(client, usuario.email, senha)
+
+
+async def _apagar_organizacao(nr_org: int) -> None:
+    """Este teste cria a organização direto pela tela de admin (não pelo fixture
+    `nr_org_teste`), então precisa apagar por conta própria ao final."""
+    async with AsyncSessionLocal() as session:
+        await session.execute(text("DELETE FROM organizacao WHERE nr_org = :nr_org"), {"nr_org": nr_org})
+        await session.commit()
 
 
 async def test_criar_e_listar_operador(client: AsyncClient, usuario_teste, nr_org_teste: int) -> None:
@@ -70,6 +80,8 @@ async def test_criar_e_listar_organizacao(client: AsyncClient, usuario_teste) ->
     assert desativar.status_code == 303
     listagem2 = await client.get("/portal-migration/admin/organizacoes")
     assert "Inativa" in listagem2.text
+
+    await _apagar_organizacao(nr_org)
 
 
 async def test_criar_template_e_adicionar_campo_e_script(client: AsyncClient, usuario_teste) -> None:
