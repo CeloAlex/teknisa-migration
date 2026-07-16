@@ -206,6 +206,22 @@ def _conta_corrente(valor: Any, campo: CampoMetadata) -> str:
     return _trim(valor, campo).replace("-", "").upper()
 
 
+def _ddd_telefone(valor: Any, campo: CampoMetadata) -> str:
+    """eSocial (S-2200/S-2205, `contato/fonePrinc|foneAlternat`): o XML traz o telefone como
+    um único campo (DDD+número); o PHP de referência separa via
+    `substr($fone,0,2)`/`substr($fone,2,...)` só quando o telefone tem mais de 9 dígitos —
+    caso contrário, considera que não há DDD embutido."""
+    apenas_digitos = re.sub(r"\D", "", str(valor)) if valor is not None else ""
+    return apenas_digitos[:2] if len(apenas_digitos) > 9 else ""
+
+
+def _numero_telefone(valor: Any, campo: CampoMetadata) -> str:
+    """Par de `ddd_telefone` — devolve o restante do número após os 2 dígitos de DDD (ou o
+    valor inteiro, se não houver DDD embutido)."""
+    apenas_digitos = re.sub(r"\D", "", str(valor)) if valor is not None else ""
+    return apenas_digitos[2:] if len(apenas_digitos) > 9 else apenas_digitos
+
+
 # Registro nomeado de regras de conversão (equivalente às fórmulas TRIM/SUBSTITUTE/TEXT das
 # planilhas — Seção 6/7.2) — o dicionário de dados referencia estas chaves por nome, nunca
 # por código específico de template.
@@ -233,6 +249,8 @@ CONVERSOES: dict[str, ConversaoFn] = {
     "tipo_logradouro": _tipo_logradouro,
     "agencia_bancaria": _agencia_bancaria,
     "conta_corrente": _conta_corrente,
+    "ddd_telefone": _ddd_telefone,
+    "numero_telefone": _numero_telefone,
 }
 
 
