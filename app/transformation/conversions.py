@@ -155,6 +155,57 @@ def _numero_ou_null(valor: Any, campo: CampoMetadata) -> str:
     return str(valor).replace(",", ".")
 
 
+def _cpf(valor: Any, campo: CampoMetadata) -> str:
+    """Vínculo (Seção 26.2): equivalente à fórmula real
+    `TEXT(MIG_NORMA.NÚMERICO(J3),"00000000000")` — extrai só dígitos e completa com zeros
+    à esquerda até 11 posições."""
+    apenas_digitos = re.sub(r"\D", "", str(valor)) if valor is not None else ""
+    return apenas_digitos.zfill(11) if apenas_digitos else ""
+
+
+def _ctps(valor: Any, campo: CampoMetadata) -> str:
+    """Mesma ideia do `cpf`, para CTPS — fórmula real usa 7 posições."""
+    apenas_digitos = re.sub(r"\D", "", str(valor)) if valor is not None else ""
+    return apenas_digitos.zfill(7) if apenas_digitos else ""
+
+
+def _truncar(valor: Any, campo: CampoMetadata) -> str:
+    """trim + corta no `tamanho_maximo` do campo (ex. Vínculo: NRCERTRESE, fórmula real
+    `MID(TRIM(AA3),1,20)`) — ao contrário de `tamanho_maximo` sozinho (que só gera alerta na
+    validação), esta regra efetivamente corta o valor antes de ir para o script."""
+    texto = _trim(valor, campo)
+    return texto[: campo.tamanho_maximo] if campo.tamanho_maximo else texto
+
+
+def _situfuncm_por_rescisao(valor: Any, campo: CampoMetadata) -> str:
+    """Campo derivado do Vínculo: a coluna "Situ. Funcional" da planilha real não é
+    preenchida manualmente — é uma fórmula (`=IF(DTRESCISAO="",1,13)`). Direcionado pelo
+    usuário: com data de rescisão preenchida, código 13; sem rescisão, código 1."""
+    valores = valor if isinstance(valor, list) else [valor]
+    dt_rescisao = valores[0] if valores else None
+    return "13" if dt_rescisao not in (None, "") else "1"
+
+
+def _tipo_logradouro(valor: Any, campo: CampoMetadata) -> str:
+    """Vínculo (endereço): fórmula real extrai os 4 primeiros caracteres do logradouro já
+    maiúsculo e sem acento (ex. "Rua" -> "RUA", "Avenida" -> "AVEN") para casar com o
+    domínio `CDLOGRADOURO` do destino."""
+    return _upper_sem_acento(valor, campo)[:4]
+
+
+def _agencia_bancaria(valor: Any, campo: CampoMetadata) -> str:
+    """Vínculo: fórmula real remove hífen, maiusculiza e mantém só os 5 primeiros
+    caracteres (`UPPER(MID(SUBSTITUTE(TRIM(AK3),"-",""),1,5))`)."""
+    texto = _trim(valor, campo).replace("-", "").upper()
+    return texto[:5]
+
+
+def _conta_corrente(valor: Any, campo: CampoMetadata) -> str:
+    """Vínculo: fórmula real remove hífen e maiusculiza
+    (`UPPER(SUBSTITUTE(TRIM(AL3),"-",""))`), sem limite de tamanho."""
+    return _trim(valor, campo).replace("-", "").upper()
+
+
 # Registro nomeado de regras de conversão (equivalente às fórmulas TRIM/SUBSTITUTE/TEXT das
 # planilhas — Seção 6/7.2) — o dicionário de dados referencia estas chaves por nome, nunca
 # por código específico de template.
@@ -175,6 +226,13 @@ CONVERSOES: dict[str, ConversaoFn] = {
     "primeiro_nao_vazio": _primeiro_nao_vazio,
     "cbo": _cbo,
     "numero_ou_null": _numero_ou_null,
+    "cpf": _cpf,
+    "ctps": _ctps,
+    "truncar": _truncar,
+    "situfuncm_por_rescisao": _situfuncm_por_rescisao,
+    "tipo_logradouro": _tipo_logradouro,
+    "agencia_bancaria": _agencia_bancaria,
+    "conta_corrente": _conta_corrente,
 }
 
 
