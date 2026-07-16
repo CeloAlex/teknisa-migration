@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block titulo %}{{ "Editar script" if script else "Novo script" }}{% endblock %}
+{% block conteudo %}
+<div class="card">
+  <h2>{{ "Editar bloco de script" if script else "Adicionar bloco de script" }} — {{ codigo }}</h2>
+  <form method="post" action="{{ '/portal/admin/templates/' ~ codigo ~ '/scripts/' ~ script.id ~ '/editar' if script else '/portal/admin/templates/' ~ codigo ~ '/scripts/novo' }}">
+    <div class="grid4">
+      <div class="field">
+        <label for="operacao">Operação</label>
+        <select id="operacao" name="operacao">
+          <option value="INCLUSAO" {% if script and script.operacao == 'INCLUSAO' %}selected{% endif %}>Inclusão</option>
+          <option value="ALTERACAO" {% if script and script.operacao == 'ALTERACAO' %}selected{% endif %}>Alteração</option>
+          <option value="EXCLUSAO" {% if script and script.operacao == 'EXCLUSAO' %}selected{% endif %}>Exclusão</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="dialeto_banco">Dialeto do banco</label>
+        <input type="text" id="dialeto_banco" name="dialeto_banco" value="{{ script.dialeto_banco if script else 'ORACLE' }}">
+      </div>
+      <div class="field">
+        <label for="ordem">Ordem</label>
+        <input type="number" id="ordem" name="ordem" value="{{ script.ordem if script else 1 }}">
+      </div>
+      <div class="field">
+        <label for="condicao_campo">Campo de condição (bloco condicional, opcional)</label>
+        <input type="text" id="condicao_campo" name="condicao_campo" value="{{ script.condicao_campo if script else '' }}">
+      </div>
+    </div>
+    <div class="field">
+      <label for="template_sql">Template SQL (marcadores @CAMPO@)</label>
+      <textarea id="template_sql" name="template_sql" rows="12" required>{{ script.template_sql if script else '' }}</textarea>
+    </div>
+    <div class="field">
+      <label for="template_rollback">Template de rollback (opcional)</label>
+      <textarea id="template_rollback" name="template_rollback" rows="6">{{ script.template_rollback if script else '' }}</textarea>
+    </div>
+    <div class="btnbar">
+      <a class="btn secondary" href="/portal/admin/templates/{{ codigo }}">Cancelar</a>
+      <button class="btn" type="submit">Salvar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+<div class="card">
+  <h3>Templates desta migração</h3>
+  <div class="desc">Envie a planilha de cada template — arquivos grandes são processados em lotes, com opção de pausar/continuar.</div>
+  {% for mts in templates_ordenados %}
+  {% set cor = status_template_meta(mts.status)[0] %}
+  {% set rotulo = status_template_meta(mts.status)[1] %}
+  <div class="tpl-catalog-card">
+    <div class="head">
+      <b>{{ mts.template.nome }}</b>
+      <span class="badge {{ cor }}">{{ rotulo }}</span>
+    </div>
+    {% if mts.status == 'em_importacao' %}
+      {% include "_template_progress.html" %}
+    {% elif usuario.papel in ('operador', 'administrador') %}
+      <form method="post" action="/portal/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/arquivo" enctype="multipart/form-data" class="tpl-inline-block">
+        <div class="dropzone" data-input="arquivo-{{ mts.template.codigo }}">
+          <span data-rotulo>Arraste o arquivo .xlsx aqui ou clique para selecionar</span>
+        </div>
+        <input type="file" id="arquivo-{{ mts.template.codigo }}" name="arquivo" accept=".xlsx" style="display:none" required>
+        <div class="btnbar">
+          <button class="btn small" type="submit">Enviar arquivo</button>
+        </div>
+      </form>
+      {% if mts.total_linhas %}
+      <small class="hint">Última importação: {{ mts.linhas_processadas }}/{{ mts.total_linhas }} linhas.</small>
+      {% endif %}
+    {% elif mts.total_linhas %}
+      <small class="hint">{{ mts.linhas_processadas }}/{{ mts.total_linhas }} linhas.</small>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>

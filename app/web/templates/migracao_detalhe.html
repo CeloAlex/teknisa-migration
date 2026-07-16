@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block titulo %}Migração #{{ migracao.id }}{% endblock %}
+{% block conteudo %}
+{% set migracao_id = migracao.id %}
+{% set cor = status_migracao_meta(migracao.status)[0] %}
+{% set rotulo = status_migracao_meta(migracao.status)[1] %}
+<div class="card">
+  <a href="/portal/">← Voltar ao painel</a>
+  <h2>Migração #{{ migracao.id }}</h2>
+  <div class="kv">
+    <span><b>Tipo:</b> {{ migracao.tipo_migracao.nome }}</span>
+    <span><b>Banco:</b> {{ migracao.tipo_migracao.banco_destino }}</span>
+    <span><b>Operador:</b> {{ migracao.operador }}</span>
+    <span><b>Status:</b> <span class="badge {{ cor }}">{{ rotulo }}</span></span>
+    <span><b>Criada em:</b> {{ migracao.dt_criacao | data_br }}</span>
+  </div>
+  {% if migracao.eventos %}
+  <div class="timeline">
+    {% for evento in migracao.eventos %}
+    <div class="tl-item{% if loop.last %} now{% else %} done{% endif %}">{{ evento.evento }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if usuario.papel == 'administrador' and migracao.status not in ['concluida', 'concluida_com_alertas', 'cancelada', 'revertida'] %}
+  <div class="btnbar">
+    <form class="inline" method="post" action="/portal/migracoes/{{ migracao.id }}/cancelar">
+      <button class="btn danger small" type="submit">Cancelar migração</button>
+    </form>
+    {% if migracao.status == 'com_erro' %}
+    <form class="inline" method="post" action="/portal/migracoes/{{ migracao.id }}/reverter">
+      <button class="btn secondary small" type="submit">Confirmar rollback (reverter)</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{% if erro %}<div class="flash erro">{{ erro }}</div>{% endif %}
+
+<div class="tabs">
+  {% for codigo, rotulo_aba in abas %}
+  <a class="tab{% if aba == codigo %} active{% endif %}" href="/portal/migracoes/{{ migracao.id }}?aba={{ codigo }}">{{ rotulo_aba }}</a>
+  {% endfor %}
+</div>
+
+{% include "_aba_" ~ aba ~ ".html" %}
+{% endblock %}

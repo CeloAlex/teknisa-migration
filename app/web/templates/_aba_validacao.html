@@ -1,0 +1,45 @@
+{% for mts in templates_ordenados %}
+<div class="card">
+  <h3>{{ mts.template.nome }}</h3>
+  {% set c = contagens.get(mts.template.codigo) %}
+  {% if not c or c.recebidos == 0 %}
+    <div class="banner info">Nenhuma linha importada ainda para este template.</div>
+  {% else %}
+    <div class="counters">
+      <div class="counter"><div class="n">{{ c.recebidos }}</div><div class="l">Recebidos</div></div>
+      <div class="counter"><div class="n">{{ c.validos }}</div><div class="l">Válidos</div></div>
+      <div class="counter"><div class="n">{{ c.rejeitados }}</div><div class="l">Rejeitados</div></div>
+      <div class="counter"><div class="n">{{ c.alertas }}</div><div class="l">Alertas</div></div>
+    </div>
+    {% if c.rejeitados > 0 %}
+    <div class="banner block">Há erros impeditivos — corrija e reenvie o arquivo antes de aprovar os dados.</div>
+    {% elif c.alertas > 0 %}
+    <div class="banner warn">Há alertas — não bloqueiam a aprovação, mas vale revisar.</div>
+    {% else %}
+    <div class="banner ok">Nenhuma inconsistência encontrada.</div>
+    {% endif %}
+    {% set ocorr = ocorrencias.get(mts.template.codigo) %}
+    {% if ocorr %}
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>Severidade</th><th>Linha</th><th>Campo</th><th>Recebido</th><th>Esperado</th><th>Orientação</th></tr></thead>
+        <tbody>
+          {% for linha, v in ocorr %}
+          {% set scor = severidade_meta(v.classificacao)[0] %}
+          {% set srot = severidade_meta(v.classificacao)[1] %}
+          <tr>
+            <td><span class="badge {{ scor }}">{{ srot }}</span></td>
+            <td>{{ linha }}</td>
+            <td class="mono">{{ v.campo }}</td>
+            <td>{{ v.valor_recebido }}</td>
+            <td>{{ v.valor_esperado }}</td>
+            <td>{{ v.mensagem }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  {% endif %}
+</div>
+{% endfor %}

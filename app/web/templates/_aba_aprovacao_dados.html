@@ -1,0 +1,27 @@
+{% for mts in templates_ordenados %}
+<div class="card">
+  <h3>{{ mts.template.nome }}</h3>
+  {% set c = contagens.get(mts.template.codigo) %}
+  {% if c %}
+  <div class="counters">
+    <div class="counter"><div class="n">{{ c.recebidos }}</div><div class="l">Recebidos</div></div>
+    <div class="counter"><div class="n">{{ c.validos }}</div><div class="l">Válidos</div></div>
+    <div class="counter"><div class="n">{{ c.rejeitados }}</div><div class="l">Rejeitados</div></div>
+    <div class="counter"><div class="n">{{ c.alertas }}</div><div class="l">Alertas</div></div>
+  </div>
+  {% endif %}
+  {% if mts.dados_aprovados %}
+    <div class="banner ok">Dados aprovados por {{ mts.aprovado_dados_por }}.</div>
+  {% elif mts.status != template_status.VALIDADO.value %}
+    <div class="banner block">Este template ainda não passou pela validação sem erros impeditivos.</div>
+  {% elif usuario.papel in ('operador', 'aprovador_funcional', 'administrador') %}
+    <form method="post" action="/portal/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/aprovar-dados">
+      <div class="btnbar">
+        <button class="btn success" type="submit">Aprovar dados de {{ mts.template.nome }}</button>
+      </div>
+    </form>
+  {% else %}
+    <div class="banner info">Aguardando aprovação de dados (perfil Operador/Aprovador Funcional/Administrador).</div>
+  {% endif %}
+</div>
+{% endfor %}

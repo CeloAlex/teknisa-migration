@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Primeiro acesso — Plataforma de Migração de Dados</title>
+  <link rel="stylesheet" href="/portal/static/css/app.css">
+</head>
+<body>
+<div class="login-wrap">
+  <div class="card login-card">
+    <h2>Primeiro acesso</h2>
+    <div class="desc">
+      Cadastre o primeiro administrador do sistema para começar — ele poderá, em seguida,
+      cadastrar os demais operadores em "Operadores".
+    </div>
+    {% if erro %}<div class="flash erro">{{ erro }}</div>{% endif %}
+    <form method="post" action="/portal/primeiro-acesso">
+      <div class="field">
+        <label for="nome">Nome completo</label>
+        <input type="text" id="nome" name="nome" required autofocus>
+      </div>
+      <div class="field">
+        <label for="cargo">Cargo</label>
+        <input type="text" id="cargo" name="cargo">
+      </div>
+      <div class="field">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+      <div class="field">
+        <label for="senha">Senha</label>
+        <input type="password" id="senha" name="senha" required minlength="8">
+      </div>
+      <div class="field">
+        <label for="confirmar_senha">Confirmar senha</label>
+        <input type="password" id="confirmar_senha" name="confirmar_senha" required minlength="8">
+      </div>
+      <div class="btnbar">
+        <button class="btn" type="submit">Criar administrador e entrar</button>
+      </div>
+    </form>
+  </div>
+</div>
+</body>
+</html>

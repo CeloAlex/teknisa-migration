@@ -15,6 +15,7 @@ import app.models.organizacao  # noqa: F401,E402
 import app.models.staging  # noqa: F401,E402
 import app.models.template  # noqa: F401,E402
 import app.models.tipo_migracao  # noqa: F401,E402
+import app.models.usuario  # noqa: F401,E402
 
 config = context.config
 

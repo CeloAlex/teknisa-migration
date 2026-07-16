@@ -1,0 +1,31 @@
+{% for mts in templates_ordenados %}
+<div class="card">
+  <h3>{{ mts.template.nome }}</h3>
+  {% set script = scripts.get(mts.template.codigo) %}
+  {% if script %}
+    <div class="badge blue">{{ script.operacao }}</div>
+    <div class="codebox">{{ script.conteudo_sql[:3000] }}</div>
+    <div class="btnbar">
+      <a class="btn small secondary" href="/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/script">Baixar .sql</a>
+    </div>
+  {% elif not mts.dados_aprovados %}
+    <div class="banner block">Aprove os dados deste template antes de gerar o script.</div>
+  {% elif usuario.papel in ('operador', 'aprovador_funcional', 'administrador') %}
+    <form method="post" action="/portal/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/gerar-script">
+      <div class="field" style="max-width:220px;">
+        <label for="operacao-{{ mts.template.codigo }}">Operação</label>
+        <select id="operacao-{{ mts.template.codigo }}" name="operacao">
+          <option value="INCLUSAO">Inclusão</option>
+          <option value="ALTERACAO">Alteração</option>
+          <option value="EXCLUSAO">Exclusão</option>
+        </select>
+      </div>
+      <div class="btnbar">
+        <button class="btn" type="submit">Gerar script</button>
+      </div>
+    </form>
+  {% else %}
+    <div class="banner info">Aguardando geração de script (perfil Operador/Aprovador Funcional/Administrador).</div>
+  {% endif %}
+</div>
+{% endfor %}

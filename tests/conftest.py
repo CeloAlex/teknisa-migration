@@ -1,11 +1,14 @@
 import random
+from typing import Callable, Coroutine
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from app.auth.security import hash_senha
 from app.db.session import AsyncSessionLocal
 from app.main import app
 from app.models.organizacao import Organizacao
+from app.models.usuario import Usuario
 
 
 @pytest.fixture
@@ -25,3 +28,35 @@ async def nr_org_teste() -> int:
         session.add(Organizacao(nr_org=nr_org, nome=f"Organização de Teste {nr_org}"))
         await session.commit()
     return nr_org
+
+
+SENHA_PADRAO_TESTE = "senha-teste-123"
+
+
+@pytest.fixture
+def usuario_teste() -> Callable[..., Coroutine[None, None, tuple[Usuario, str]]]:
+    """Fábrica de usuário do portal descartável, com e-mail aleatório (mesmo motivo do
+    `nr_org_teste`: o banco de testes nunca é resetado entre execuções). Devolve o objeto
+    `Usuario` já persistido e a senha em texto puro usada para logar via `/portal/login`."""
+
+    async def _criar(papel: str, nr_org: int | None = None, senha: str = SENHA_PADRAO_TESTE) -> tuple[Usuario, str]:
+        sufixo = random.randint(1_000_000, 9_999_999)
+        async with AsyncSessionLocal() as session:
+            usuario = Usuario(
+                nome=f"Usuário Teste {sufixo}",
+                email=f"teste{sufixo}@example.com",
+                papel=papel,
+                nr_org=nr_org,
+                senha_hash=hash_senha(senha),
+            )
+            session.add(usuario)
+            await session.commit()
+            await session.refresh(usuario)
+        return usuario, senha
+
+    return _criar
+
+
+async def login(client: AsyncClient, email: str, senha: str) -> None:
+    resposta = await client.post("/portal/login", data={"email": email, "senha": senha})
+    assert resposta.status_code == 303, resposta.text

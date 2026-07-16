@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block titulo %}{{ "Editar campo" if campo else "Novo campo" }}{% endblock %}
+{% block conteudo %}
+<div class="card">
+  <h2>{{ "Editar campo do dicionário" if campo else "Adicionar campo ao dicionário" }} — {{ codigo }}</h2>
+  <form method="post" action="{{ '/portal/admin/templates/' ~ codigo ~ '/campos/' ~ campo.id ~ '/editar' if campo else '/portal/admin/templates/' ~ codigo ~ '/campos/novo' }}">
+    <div class="grid3">
+      <div class="field">
+        <label for="ordem">Ordem</label>
+        <input type="number" id="ordem" name="ordem" value="{{ campo.ordem if campo else '' }}" required>
+      </div>
+      <div class="field">
+        <label for="origem">Coluna de origem (ex.: A, B, C...)</label>
+        <input type="text" id="origem" name="origem" value="{{ campo.origem if campo else '' }}" required>
+      </div>
+      <div class="field">
+        <label for="rotulo">Rótulo</label>
+        <input type="text" id="rotulo" name="rotulo" value="{{ campo.rotulo if campo else '' }}" required>
+      </div>
+      <div class="field">
+        <label for="campo">Nome do campo (identificador)</label>
+        <input type="text" id="campo" name="campo" value="{{ campo.campo if campo else '' }}" required>
+      </div>
+      <div class="field">
+        <label for="marcador">Marcador @CAMPO@</label>
+        <input type="text" id="marcador" name="marcador" value="{{ campo.marcador if campo else '' }}">
+      </div>
+      <div class="field">
+        <label for="destino_tabela">Tabela destino</label>
+        <input type="text" id="destino_tabela" name="destino_tabela" value="{{ campo.destino_tabela if campo else '' }}" required>
+      </div>
+      <div class="field">
+        <label for="destino_coluna">Coluna destino</label>
+        <input type="text" id="destino_coluna" name="destino_coluna" value="{{ campo.destino_coluna if campo else '' }}" required>
+      </div>
+      <div class="field">
+        <label for="tipo">Tipo</label>
+        <input type="text" id="tipo" name="tipo" value="{{ campo.tipo if campo else '' }}" required>
+      </div>
+      <div class="field">
+        <label for="tamanho_maximo">Tamanho máximo</label>
+        <input type="number" id="tamanho_maximo" name="tamanho_maximo" value="{{ campo.tamanho_maximo if campo else '' }}">
+      </div>
+      <div class="field">
+        <label for="valor_padrao">Valor padrão</label>
+        <input type="text" id="valor_padrao" name="valor_padrao" value="{{ campo.valor_padrao if campo else '' }}">
+      </div>
+      <div class="field">
+        <label for="regra_conversao">Regra de conversão</label>
+        <input type="text" id="regra_conversao" name="regra_conversao" value="{{ campo.regra_conversao if campo else '' }}">
+      </div>
+      <div class="field">
+        <label for="gerador_pk_contador">Contador do gerador de PK</label>
+        <input type="text" id="gerador_pk_contador" name="gerador_pk_contador" value="{{ campo.gerador_pk_contador if campo else '' }}">
+      </div>
+      <div class="field">
+        <label for="gerador_pk_seed">Semente do gerador de PK</label>
+        <input type="number" id="gerador_pk_seed" name="gerador_pk_seed" value="{{ campo.gerador_pk_seed if campo else '' }}">
+      </div>
+    </div>
+    <div class="field">
+      <label for="regra_validacao">Regra de validação (opcional)</label>
+      <textarea id="regra_validacao" name="regra_validacao">{{ campo.regra_validacao if campo else '' }}</textarea>
+    </div>
+    <div class="checkline">
+      <input type="checkbox" id="obrigatorio" name="obrigatorio" value="true" {% if campo and campo.obrigatorio %}checked{% endif %}>
+      <label for="obrigatorio" style="margin:0;">Campo obrigatório</label>
+    </div>
+    <div class="checkline">
+      <input type="checkbox" id="eh_pk" name="eh_pk" value="true" {% if campo and campo.eh_pk %}checked{% endif %}>
+      <label for="eh_pk" style="margin:0;">É chave primária (PK)</label>
+    </div>
+    <div class="checkline">
+      <input type="checkbox" id="gerador_pk" name="gerador_pk" value="true" {% if campo and campo.gerador_pk %}checked{% endif %}>
+      <label for="gerador_pk" style="margin:0;">Gera PK sequencial (Key Resolution Service)</label>
+    </div>
+    <div class="btnbar">
+      <a class="btn secondary" href="/portal/admin/templates/{{ codigo }}">Cancelar</a>
+      <button class="btn" type="submit">Salvar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

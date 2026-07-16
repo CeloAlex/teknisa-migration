@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block titulo %}Templates{% endblock %}
+{% block conteudo %}
+<div class="card">
+  <h2>Templates (dicionário de dados)</h2>
+  <table>
+    <thead><tr><th>Código</th><th>Nome</th><th>Versão</th><th>Catálogo</th><th>Ativo</th><th></th></tr></thead>
+    <tbody>
+      {% for t in templates %}
+      <tr>
+        <td class="mono">{{ t.codigo }}</td>
+        <td>{{ t.nome }}</td>
+        <td>{{ t.versao }}</td>
+        <td>{% if t.eh_catalogo %}<span class="badge blue">Sim</span>{% else %}—{% endif %}</td>
+        <td><span class="badge {% if t.ativo %}green{% else %}gray{% endif %}">{{ "Ativo" if t.ativo else "Inativo" }}</span></td>
+        <td><a class="btn small secondary" href="/portal/admin/templates/{{ t.codigo }}">Abrir</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="btnbar">
+    <a class="btn" href="/portal/admin/templates/novo">+ Criar novo template</a>
+  </div>
+</div>
+{% endblock %}

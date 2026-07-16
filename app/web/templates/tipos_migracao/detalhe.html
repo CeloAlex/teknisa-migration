@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block titulo %}{{ tipo.nome }}{% endblock %}
+{% block conteudo %}
+<div class="card">
+  <a href="/portal/admin/tipos-migracao">← Voltar</a>
+  <h2>{{ tipo.nome }} <span class="mono">({{ tipo.codigo }})</span></h2>
+  <div class="kv">
+    <span><b>Banco de destino:</b> {{ tipo.banco_destino }}</span>
+    <span><b>Modo de aplicação:</b> {{ tipo.modo_aplicacao }}</span>
+    <span><b>Sequência travada:</b> {{ "Sim" if tipo.sequencia_obrigatoria else "Não" }}</span>
+    <span><b>Permite concorrência:</b> {{ "Sim" if tipo.permite_concorrencia else "Não" }}</span>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Templates deste tipo (ordem de importação)</h3>
+  <table>
+    <thead><tr><th>Ordem</th><th>Template</th><th>Obrigatório</th><th>Depende de</th><th></th></tr></thead>
+    <tbody>
+      {% for tmt in tipo.templates | sort(attribute='ordem') %}
+      <tr>
+        <td>
+          <form method="post" action="/portal/admin/tipos-migracao/{{ tipo.codigo }}/templates/{{ tmt.id }}/editar" style="display:flex; gap:6px; align-items:center;">
+            <input type="number" name="ordem" value="{{ tmt.ordem }}" style="width:70px;">
+        </td>
+        <td>{{ tmt.template.nome }} <span class="mono">({{ tmt.template.codigo }})</span></td>
+        <td>
+            <input type="checkbox" name="obrigatorio" value="true" {% if tmt.obrigatorio %}checked{% endif %} style="width:auto;">
+        </td>
+        <td>
+          {% if tmt.dependencias %}
+            {% for d in tmt.dependencias %}<span class="badge gray">{{ d.depende_de_template.nome }}</span> {% endfor %}
+          {% else %}—{% endif %}
+        </td>
+        <td class="table-actions">
+            <button class="btn small secondary" type="submit">Salvar</button>
+          </form>
+          <form class="inline" method="post" action="/portal/admin/tipos-migracao/{{ tipo.codigo }}/templates/{{ tmt.id }}/remover" onsubmit="return confirm('Remover este template do tipo de migração?');">
+            <button class="btn small danger" type="submit">Remover</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if templates_disponiveis %}
+  <form method="post" action="/portal/admin/tipos-migracao/{{ tipo.codigo }}/templates/adicionar" class="tpl-inline-block">
+    <div class="grid3">
+      <div class="field">
+        <label for="template_id">Template</label>
+        <select id="template_id" name="template_id" required>
+          {% for t in templates_disponiveis %}
+          <option value="{{ t.id }}">{{ t.nome }} ({{ t.codigo }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="ordem_novo">Ordem</label>
+        <input type="number" id="ordem_novo" name="ordem" value="{{ tipo.templates | length + 1 }}">
+      </div>
+      <div class="field">
+        <label for="obrigatorio_novo">Obrigatório</label>
+        <input type="checkbox" id="obrigatorio_novo" name="obrigatorio" value="true" checked style="width:auto;">
+      </div>
+    </div>
+    <div class="btnbar">
+      <button class="btn small" type="submit">+ Adicionar template a este tipo</button>
+    </div>
+  </form>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h3>Grafo de dependências (sequência travada — Seção 26.3)</h3>
+  {% for tmt in tipo.templates %}
+    {% for d in tmt.dependencias %}
+    <div class="logline">
+      <span style="flex:1;">{{ tmt.template.nome }} depende de {{ d.depende_de_template.nome }}</span>
+      <form method="post" action="/portal/admin/tipos-migracao/{{ tipo.codigo }}/dependencias/{{ d.id }}/remover">
+        <button class="btn small danger" type="submit">Remover</button>
+      </form>
+    </div>
+    {% endfor %}
+  {% endfor %}
+  {% if tipo.templates | length > 1 %}
+  <form method="post" action="/portal/admin/tipos-migracao/{{ tipo.codigo }}/dependencias/adicionar" class="tpl-inline-block">
+    <div class="grid2">
+      <div class="field">
+        <label for="tipo_migracao_template_id">Template</label>
+        <select id="tipo_migracao_template_id" name="tipo_migracao_template_id" required>
+          {% for tmt in tipo.templates %}
+          <option value="{{ tmt.id }}">{{ tmt.template.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="depende_de_template_id">Depende de</label>
+        <select id="depende_de_template_id" name="depende_de_template_id" required>
+          {% for tmt in tipo.templates %}
+          <option value="{{ tmt.template_id }}">{{ tmt.template.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="btnbar">
+      <button class="btn small" type="submit">+ Adicionar dependência</button>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

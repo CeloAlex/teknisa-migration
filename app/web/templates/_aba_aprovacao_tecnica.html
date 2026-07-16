@@ -1,0 +1,29 @@
+<div class="banner info">Perfil: Aprovador Técnico (segregado do Aprovador Funcional/Operador que aprovou os dados).</div>
+{% for mts in templates_ordenados %}
+<div class="card">
+  <h3>{{ mts.template.nome }}</h3>
+  {% set script = scripts.get(mts.template.codigo) %}
+  {% if not script %}
+    <div class="banner block">Gere o script deste template antes de aprová-lo tecnicamente.</div>
+  {% elif mts.script_aprovado %}
+    <div class="banner ok">Script aprovado tecnicamente por {{ mts.aprovado_script_por }}.</div>
+  {% elif usuario.papel in ('aprovador_tecnico', 'administrador') %}
+    <div class="codebox">{{ script.conteudo_sql[:3000] }}</div>
+    <form method="post" action="/portal/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/aprovar-script">
+      <div class="checkline">
+        <input type="checkbox" id="rev1-{{ mts.template.codigo }}" required>
+        <label for="rev1-{{ mts.template.codigo }}" style="margin:0;">Conteúdo do script revisado</label>
+      </div>
+      <div class="checkline">
+        <input type="checkbox" id="rev2-{{ mts.template.codigo }}" required>
+        <label for="rev2-{{ mts.template.codigo }}" style="margin:0;">Banco de destino confirmado</label>
+      </div>
+      <div class="btnbar">
+        <button class="btn success" type="submit">Aprovar script de {{ mts.template.nome }}</button>
+      </div>
+    </form>
+  {% else %}
+    <div class="banner info">Aguardando aprovação técnica (perfil Aprovador Técnico/Administrador).</div>
+  {% endif %}
+</div>
+{% endfor %}

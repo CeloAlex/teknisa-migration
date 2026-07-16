@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block titulo %}Plataforma de Migração de Dados{% endblock %} — Teknisa</title>
+  <link rel="stylesheet" href="/portal/static/css/app.css">
+  <script src="/portal/static/js/htmx.min.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <h1>Plataforma de Migração de Dados ERP/HCM</h1>
+    <div class="sub">Teknisa</div>
+  </div>
+  <div class="user">
+    <span>{{ usuario.nome }} — {{ papel_rotulo(usuario.papel) }}</span>
+    <form class="inline" method="post" action="/portal/logout">
+      <button class="btn secondary small" type="submit">Sair</button>
+    </form>
+  </div>
+</header>
+<nav class="topnav">
+  <a class="item{% if request.url.path == '/portal/' %} active{% endif %}" href="/portal/">Painel de Migrações</a>
+  {% if usuario.papel == 'administrador' %}
+  <a class="item{% if '/portal/admin/operadores' in request.url.path %} active{% endif %}" href="/portal/admin/operadores">Operadores</a>
+  <a class="item{% if '/portal/admin/organizacoes' in request.url.path %} active{% endif %}" href="/portal/admin/organizacoes">Organizações</a>
+  <a class="item{% if '/portal/admin/templates' in request.url.path %} active{% endif %}" href="/portal/admin/templates">Templates</a>
+  <a class="item{% if '/portal/admin/tipos-migracao' in request.url.path %} active{% endif %}" href="/portal/admin/tipos-migracao">Tipos de Migração</a>
+  {% endif %}
+</nav>
+<main class="content">
+  {% if erro %}<div class="flash erro">{{ erro }}</div>{% endif %}
+  {% if sucesso %}<div class="flash sucesso">{{ sucesso }}</div>{% endif %}
+  {% block conteudo %}{% endblock %}
+</main>
+<script src="/portal/static/js/portal.js"></script>
+</body>
+</html>

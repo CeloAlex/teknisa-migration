@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block titulo %}Organizações{% endblock %}
+{% block conteudo %}
+<div class="card">
+  <h2>Organizações</h2>
+  <table>
+    <thead><tr><th>Nº Org</th><th>Nome</th><th>Situação</th><th></th></tr></thead>
+    <tbody>
+      {% for org in organizacoes %}
+      <tr>
+        <td>{{ org.nr_org }}</td>
+        <td>{{ org.nome }}</td>
+        <td><span class="badge {% if org.ativo %}green{% else %}gray{% endif %}">{{ "Ativa" if org.ativo else "Inativa" }}</span></td>
+        <td class="table-actions">
+          <form method="post" action="/portal/admin/organizacoes/{{ org.nr_org }}/toggle-ativo">
+            <button class="btn small {% if org.ativo %}danger{% else %}secondary{% endif %}" type="submit">
+              {{ "Desativar" if org.ativo else "Reativar" }}
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="btnbar">
+    <a class="btn" href="/portal/admin/organizacoes/nova">+ Nova organização</a>
+  </div>
+</div>
+{% endblock %}

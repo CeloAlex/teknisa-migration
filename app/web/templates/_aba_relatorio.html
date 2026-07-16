@@ -1,0 +1,40 @@
+{% set ns = namespace(recebidos=0, rejeitados=0, alertas=0) %}
+{% for mts in templates_ordenados %}
+  {% set c = contagens.get(mts.template.codigo) %}
+  {% if c %}
+    {% set ns.recebidos = ns.recebidos + c.recebidos %}
+    {% set ns.rejeitados = ns.rejeitados + c.rejeitados %}
+    {% set ns.alertas = ns.alertas + c.alertas %}
+  {% endif %}
+{% endfor %}
+<div class="card">
+  <h3>Resumo</h3>
+  {% if migracao.status in ('concluida',) %}
+    <div class="banner ok">Migração concluída sem alertas.</div>
+  {% elif migracao.status == 'concluida_com_alertas' %}
+    <div class="banner warn">Migração concluída com alertas — revise antes de considerar encerrado.</div>
+  {% elif migracao.status == 'com_erro' %}
+    <div class="banner block">Migração com erro na aplicação de algum script.</div>
+  {% else %}
+    <div class="banner info">Migração ainda em andamento.</div>
+  {% endif %}
+  <div class="counters">
+    <div class="counter"><div class="n">{{ ns.recebidos }}</div><div class="l">Linhas recebidas</div></div>
+    <div class="counter"><div class="n">{{ ns.rejeitados }}</div><div class="l">Rejeitadas</div></div>
+    <div class="counter"><div class="n">{{ ns.alertas }}</div><div class="l">Alertas</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Trilha completa</h3>
+  <div class="tblwrap">
+    <table>
+      <thead><tr><th>Evento</th><th>Usuário</th><th>Data/hora</th></tr></thead>
+      <tbody>
+        {% for evento in migracao.eventos %}
+        <tr><td>{{ evento.evento }}</td><td>{{ evento.usuario }}</td><td>{{ evento.dt_evento | data_br }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block titulo %}Tipos de Migração{% endblock %}
+{% block conteudo %}
+<div class="card">
+  <h2>Tipos de Migração</h2>
+  {% for tipo in tipos %}
+  <div class="tpl-catalog-card">
+    <div class="head">
+      <b>{{ tipo.nome }}</b> <span class="mono">({{ tipo.codigo }})</span>
+      <div class="metabadges">
+        <span class="badge blue">{{ tipo.banco_destino }}</span>
+        {% if tipo.sequencia_obrigatoria %}<span class="badge orange">Sequência travada</span>{% endif %}
+        {% if tipo.permite_concorrencia %}<span class="badge teal">Permite concorrência</span>{% endif %}
+        <span class="badge gray">{{ tipo.templates | length }} templates</span>
+      </div>
+    </div>
+    <div class="btnbar">
+      <a class="btn small secondary" href="/portal/admin/tipos-migracao/{{ tipo.codigo }}">Ver templates</a>
+    </div>
+  </div>
+  {% endfor %}
+  <div class="btnbar">
+    <a class="btn" href="/portal/admin/tipos-migracao/novo">+ Criar novo tipo</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+<div id="progresso-{{ mts.template.codigo }}"
+     {% if mts.status == 'em_importacao' %}
+     hx-get="/portal/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/progresso"
+     hx-trigger="every 1s"
+     hx-swap="outerHTML"
+     {% endif %}>
+  {% if erro %}<div class="flash erro">{{ erro }}</div>{% endif %}
+  <div class="progressbar">
+    <div class="fill" style="width: {{ ((mts.linhas_processadas / mts.total_linhas * 100) if mts.total_linhas else 0) | round(1) }}%;"></div>
+  </div>
+  <small class="hint">
+    {{ mts.linhas_processadas }}/{{ mts.total_linhas }} linhas processadas
+    {% if mts.pausado %} — pausado{% endif %}
+  </small>
+  {% if mts.status == 'em_importacao' %}
+  <div class="btnbar">
+    {% if mts.pausado %}
+    <button class="btn small" type="button"
+      hx-post="/portal/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/continuar"
+      hx-target="#progresso-{{ mts.template.codigo }}" hx-swap="outerHTML">Continuar</button>
+    {% else %}
+    <button class="btn small secondary" type="button"
+      hx-post="/portal/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/pausar"
+      hx-target="#progresso-{{ mts.template.codigo }}" hx-swap="outerHTML">Pausar</button>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>

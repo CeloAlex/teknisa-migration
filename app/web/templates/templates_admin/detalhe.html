@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block titulo %}{{ template.nome }}{% endblock %}
+{% block conteudo %}
+<div class="card">
+  <a href="/portal/admin/templates">← Voltar</a>
+  <h2>{{ template.nome }} <span class="mono">({{ template.codigo }})</span></h2>
+  <div class="kv">
+    <span><b>Versão:</b> {{ template.versao }}</span>
+    <span><b>Formatos:</b> {{ template.formatos_aceitos | join(', ') }}</span>
+    <span><b>Sheet:</b> {{ template.sheet_name or "—" }}</span>
+    <span><b>Catálogo:</b> {{ "Sim" if template.eh_catalogo else "Não" }}</span>
+  </div>
+  {% if template.pre_requisito_externo %}
+  <div class="banner warn">Pré-requisito externo: {{ template.pre_requisito_externo }}</div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h3>Dicionário de dados ({{ template.campos | length }} campos)</h3>
+  <div class="tblwrap">
+    <table>
+      <thead><tr><th>Ordem</th><th>Origem</th><th>Rótulo</th><th>Marcador</th><th>Destino</th><th>Tipo</th><th>Obrig.</th><th>Conversão</th><th>Chave</th><th></th></tr></thead>
+      <tbody>
+        {% for c in template.campos %}
+        <tr>
+          <td>{{ c.ordem }}</td>
+          <td class="mono">{{ c.origem }}</td>
+          <td>{{ c.rotulo }}</td>
+          <td class="mono">{{ c.marcador or "—" }}</td>
+          <td class="mono">{{ c.destino_tabela }}.{{ c.destino_coluna }}</td>
+          <td>{{ c.tipo }}</td>
+          <td>{% if c.obrigatorio %}<span class="badge orange">Sim</span>{% else %}—{% endif %}</td>
+          <td>{{ c.regra_conversao or "—" }}</td>
+          <td>{% if c.eh_pk %}<span class="badge purple">PK</span>{% endif %}{% if c.gerador_pk %}<span class="badge teal">Gerador PK</span>{% endif %}</td>
+          <td class="table-actions">
+            <a class="btn small secondary" href="/portal/admin/templates/{{ template.codigo }}/campos/{{ c.id }}/editar">Editar</a>
+            <form class="inline" method="post" action="/portal/admin/templates/{{ template.codigo }}/campos/{{ c.id }}/excluir" onsubmit="return confirm('Excluir este campo do dicionário?');">
+              <button class="btn small danger" type="submit">Excluir</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="btnbar">
+    <a class="btn small" href="/portal/admin/templates/{{ template.codigo }}/campos/novo">+ Adicionar campo ao dicionário</a>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Blocos de script ({{ template.scripts | length }})</h3>
+  {% for s in template.scripts %}
+  <div class="tpl-catalog-card">
+    <div class="head">
+      <b>{{ s.operacao }} — {{ s.dialeto_banco }} (ordem {{ s.ordem }})</b>
+      {% if s.condicao_campo %}<span class="badge gray">condição: {{ s.condicao_campo }}</span>{% endif %}
+    </div>
+    <div class="codebox">{{ s.template_sql[:2000] }}</div>
+    <div class="table-actions" style="margin-top:8px;">
+      <a class="btn small secondary" href="/portal/admin/templates/{{ template.codigo }}/scripts/{{ s.id }}/editar">Editar</a>
+      <form class="inline" method="post" action="/portal/admin/templates/{{ template.codigo }}/scripts/{{ s.id }}/excluir" onsubmit="return confirm('Excluir este bloco de script?');">
+        <button class="btn small danger" type="submit">Excluir</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+  <div class="btnbar">
+    <a class="btn small" href="/portal/admin/templates/{{ template.codigo }}/scripts/novo">+ Adicionar bloco de script</a>
+  </div>
+</div>
+{% endblock %}

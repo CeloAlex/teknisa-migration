@@ -1,0 +1,155 @@
+import random
+
+from httpx import AsyncClient
+
+from app.models.usuario import Papel
+from tests.conftest import login
+
+
+async def _login_admin(client: AsyncClient, usuario_teste) -> None:
+    usuario, senha = await usuario_teste(Papel.ADMINISTRADOR.value)
+    await login(client, usuario.email, senha)
+
+
+async def test_criar_e_listar_operador(client: AsyncClient, usuario_teste, nr_org_teste: int) -> None:
+    await _login_admin(client, usuario_teste)
+    email = f"novo{random.randint(1000, 9999)}@example.com"
+
+    criar = await client.post(
+        "/portal/admin/operadores/novo",
+        data={
+            "nome": "Operador De Teste",
+            "email": email,
+            "cargo": "QA",
+            "papel": Papel.OPERADOR.value,
+            "nr_org": nr_org_teste,
+            "senha": "senha-teste-123",
+        },
+        follow_redirects=False,
+    )
+    assert criar.status_code == 303
+
+    listagem = await client.get("/portal/admin/operadores")
+    assert listagem.status_code == 200
+    assert "Operador De Teste" in listagem.text
+
+
+async def test_criar_operador_com_email_duplicado_falha(client: AsyncClient, usuario_teste, nr_org_teste: int) -> None:
+    await _login_admin(client, usuario_teste)
+    existente, _ = await usuario_teste(Papel.OPERADOR.value, nr_org=nr_org_teste)
+
+    resposta = await client.post(
+        "/portal/admin/operadores/novo",
+        data={
+            "nome": "Duplicado",
+            "email": existente.email,
+            "papel": Papel.OPERADOR.value,
+            "nr_org": nr_org_teste,
+            "senha": "senha-teste-123",
+        },
+    )
+    assert resposta.status_code == 400
+    assert "Já existe um operador" in resposta.text
+
+
+async def test_criar_e_listar_organizacao(client: AsyncClient, usuario_teste) -> None:
+    await _login_admin(client, usuario_teste)
+    nr_org = random.randint(10_000_000, 99_999_999)
+
+    criar = await client.post(
+        "/portal/admin/organizacoes/nova",
+        data={"nr_org": nr_org, "nome": "Organização Admin Teste"},
+        follow_redirects=False,
+    )
+    assert criar.status_code == 303
+
+    listagem = await client.get("/portal/admin/organizacoes")
+    assert "Organização Admin Teste" in listagem.text
+
+    desativar = await client.post(f"/portal/admin/organizacoes/{nr_org}/toggle-ativo", follow_redirects=False)
+    assert desativar.status_code == 303
+    listagem2 = await client.get("/portal/admin/organizacoes")
+    assert "Inativa" in listagem2.text
+
+
+async def test_criar_template_e_adicionar_campo_e_script(client: AsyncClient, usuario_teste) -> None:
+    await _login_admin(client, usuario_teste)
+    codigo = f"TESTE_{random.randint(1000, 9999)}"
+
+    criar = await client.post(
+        "/portal/admin/templates/novo",
+        data={
+            "codigo": codigo,
+            "nome": "Template de Teste",
+            "versao": "1.0",
+            "formatos_aceitos": "XLSX",
+            "sheet_name": "Sheet1",
+            "header_row": 1,
+            "data_start_row": 2,
+        },
+        follow_redirects=False,
+    )
+    assert criar.status_code == 303
+    assert criar.headers["location"] == f"/portal/admin/templates/{codigo}"
+
+    adicionar_campo = await client.post(
+        f"/portal/admin/templates/{codigo}/campos/novo",
+        data={
+            "ordem": 1,
+            "origem": "A",
+            "rotulo": "Campo Teste",
+            "campo": "CAMPOTESTE",
+            "destino_tabela": "TABELA_TESTE",
+            "destino_coluna": "COLUNA_TESTE",
+            "tipo": "texto",
+        },
+        follow_redirects=False,
+    )
+    assert adicionar_campo.status_code == 303
+
+    adicionar_script = await client.post(
+        f"/portal/admin/templates/{codigo}/scripts/novo",
+        data={
+            "operacao": "INCLUSAO",
+            "dialeto_banco": "ORACLE",
+            "ordem": 1,
+            "template_sql": "INSERT INTO TABELA_TESTE (COLUNA_TESTE) VALUES (@CAMPOTESTE@);",
+        },
+        follow_redirects=False,
+    )
+    assert adicionar_script.status_code == 303
+
+    detalhe = await client.get(f"/portal/admin/templates/{codigo}")
+    assert detalhe.status_code == 200
+    assert "Campo Teste" in detalhe.text
+    assert "INSERT INTO TABELA_TESTE" in detalhe.text
+
+
+async def test_criar_tipo_migracao_e_adicionar_template_e_dependencia(client: AsyncClient, usuario_teste) -> None:
+    await _login_admin(client, usuario_teste)
+    codigo_tipo = f"TIPO_TESTE_{random.randint(1000, 9999)}"
+
+    criar_tipo = await client.post(
+        "/portal/admin/tipos-migracao/novo",
+        data={"codigo": codigo_tipo, "nome": "Tipo de Teste", "banco_destino": "ORACLE", "modo_aplicacao": "SCRIPT"},
+        follow_redirects=False,
+    )
+    assert criar_tipo.status_code == 303
+
+    detalhe = await client.get(f"/portal/admin/tipos-migracao/{codigo_tipo}")
+    assert detalhe.status_code == 200
+    assert "Tipo de Teste" in detalhe.text
+
+
+async def test_operador_bloqueado_em_todas_as_telas_admin(client: AsyncClient, usuario_teste, nr_org_teste: int) -> None:
+    usuario, senha = await usuario_teste(Papel.OPERADOR.value, nr_org=nr_org_teste)
+    await login(client, usuario.email, senha)
+
+    for caminho in [
+        "/portal/admin/operadores",
+        "/portal/admin/organizacoes",
+        "/portal/admin/templates",
+        "/portal/admin/tipos-migracao",
+    ]:
+        resposta = await client.get(caminho)
+        assert resposta.status_code == 403, f"{caminho} deveria bloquear Operador"

@@ -1,0 +1,22 @@
+<div class="card">
+  <h3>Downloads</h3>
+  <div class="desc">Scripts SQL gerados por template — a aplicação real no banco de destino é feita fora da plataforma (Anexo J).</div>
+  <table>
+    <thead><tr><th>Template</th><th>Script (.sql)</th></tr></thead>
+    <tbody>
+      {% for mts in templates_ordenados %}
+      {% set script = scripts.get(mts.template.codigo) %}
+      <tr>
+        <td>{{ mts.template.nome }}</td>
+        <td>
+          {% if script %}
+          <a class="btn small secondary" href="/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/script">Baixar .sql</a>
+          {% else %}
+          <small class="hint">pendente</small>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     # automaticamente, nunca pelo operador. Pode ser sobrescrito por requisição de upload.
     tamanho_lote_processamento: int = 250
 
+    # Chave de assinatura do cookie de sessão do portal (Fase 6). O default só serve para
+    # desenvolvimento local — em produção precisa vir de variável de ambiente/.env.
+    secret_key: str = "dev-secret-key-troque-em-producao"
+
 
 @lru_cache
 def get_settings() -> Settings:
