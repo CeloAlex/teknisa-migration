@@ -73,4 +73,6 @@ async def resolver_template(session: AsyncSession, codigo: str) -> TemplateMetad
         scripts=dict(scripts),
         eh_catalogo=template.eh_catalogo,
         pre_requisito_externo=template.pre_requisito_externo,
+        formatos_aceitos=list(template.formatos_aceitos or ["XLSX"]),
+        xml_registro_xpath=template.xml_registro_xpath,
     )

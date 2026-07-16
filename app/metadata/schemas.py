@@ -71,3 +71,5 @@ class TemplateMetadata:
     scripts: dict[str, list[ScriptMetadata]] = field(default_factory=dict)
     eh_catalogo: bool = False
     pre_requisito_externo: str | None = None
+    formatos_aceitos: list[str] = field(default_factory=lambda: ["XLSX"])
+    xml_registro_xpath: str | None = None

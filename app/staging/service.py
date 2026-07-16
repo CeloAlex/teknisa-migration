@@ -6,7 +6,8 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import AsyncSessionLocal
-from app.ingestion.xlsx import LINHA_PLANILHA, ArquivoInvalido, ler_xlsx
+from app.ingestion import ler_arquivo
+from app.ingestion.xlsx import LINHA_PLANILHA, ArquivoInvalido
 from app.metadata.resolver import resolver_template
 from app.metadata.schemas import TemplateMetadata
 from app.migracoes.estado import ResumoTemplate, recalcular_status
@@ -189,7 +190,7 @@ async def processar_arquivo_em_background(
         template_meta = await resolver_template(session, template_row.codigo)
 
         try:
-            linhas_brutas = ler_xlsx(conteudo, template_meta)
+            linhas_brutas = ler_arquivo(conteudo, template_meta)
         except ArquivoInvalido:
             mts.status = TemplateStatus.COM_INCONSISTENCIAS.value
             await _atualizar_status_migracao(session, mts.migracao_id)

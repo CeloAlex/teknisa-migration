@@ -64,6 +64,39 @@ def _data_br(valor: Any, campo: CampoMetadata) -> str:
     return texto
 
 
+def _data_iso(valor: Any, campo: CampoMetadata) -> str:
+    """Datas do eSocial vêm em ISO 8601 ("AAAA-MM-DD" ou, para campos de competência,
+    "AAAA-MM") — sintaxe diferente da planilha (`data_br` espera DD/MM/AAAA e quebraria
+    silenciosamente com um ISO, invertendo dia/ano). "AAAA-MM" vira o primeiro dia do mês,
+    mesmo critério que o parser de origem já usa para competência."""
+    if valor in (None, ""):
+        return ""
+    if isinstance(valor, (datetime, date)):
+        return valor.strftime("%d/%m/%Y")
+    texto = str(valor).strip()
+    partes = texto.split("-")
+    if len(partes) == 3:
+        ano, mes, dia = partes
+        return f"{dia.zfill(2)}/{mes.zfill(2)}/{ano}"
+    if len(partes) == 2:
+        ano, mes = partes
+        return f"01/{mes.zfill(2)}/{ano}"
+    return texto
+
+
+def _codigo_igual_15(valor: Any, campo: CampoMetadata) -> bool:
+    """Regra de campo derivado usada só para rotear o evento eSocial S-2230 (Afastamento
+    Temporário): o código de motivo de afastamento eSocial "15" é Férias — o restante dos
+    códigos é afastamento/Situação Funcional (Seção 26.2 do material eSocial fornecido)."""
+    valores = valor if isinstance(valor, list) else [valor]
+    return any(str(v).strip() == "15" for v in valores if v is not None)
+
+
+def _codigo_diferente_15(valor: Any, campo: CampoMetadata) -> bool:
+    """Inverso de `codigo_igual_15` — usado como `condicao_campo` do bloco oposto."""
+    return not _codigo_igual_15(valor, campo)
+
+
 def _numero_decimal(valor: Any, campo: CampoMetadata) -> str | None:
     if valor in (None, ""):
         return None
@@ -132,6 +165,9 @@ CONVERSOES: dict[str, ConversaoFn] = {
     "upper_sem_acento": _upper_sem_acento,
     "zero_esquerda": _zero_esquerda,
     "data_br": _data_br,
+    "data_iso": _data_iso,
+    "codigo_igual_15": _codigo_igual_15,
+    "codigo_diferente_15": _codigo_diferente_15,
     "numero_decimal": _numero_decimal,
     "vazio_para_n": _vazio_para_n,
     "nenhum_vazio": _nenhum_vazio,

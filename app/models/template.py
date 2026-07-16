@@ -29,6 +29,11 @@ class Template(Base):
     # ao operador antes da geração do script — não é (ainda) uma consulta de verificação
     # executada de fato, pois isso depende da integração com o banco de destino.
     pre_requisito_externo: Mapped[str | None] = mapped_column(Text)
+    # Fase 7 (eSocial): XPath (relativo à raiz, após remoção de namespace) que seleciona
+    # o(s) nó(s) "linha" no XML — nulo significa "o documento inteiro é uma linha só", o
+    # caso da maioria dos eventos eSocial (um XML = um evento). Só usado quando
+    # `formatos_aceitos` inclui "XML"; templates XLSX deixam isso nulo.
+    xml_registro_xpath: Mapped[str | None] = mapped_column(String(300))
 
     campos: Mapped[list["TemplateCampo"]] = relationship(
         back_populates="template", order_by="TemplateCampo.ordem", cascade="all, delete-orphan"
@@ -46,7 +51,9 @@ class TemplateCampo(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     template_id: Mapped[int] = mapped_column(ForeignKey("template.id"), index=True)
     ordem: Mapped[int] = mapped_column(Integer)
-    origem: Mapped[str] = mapped_column(String(100))
+    # 100 bastava para referências de coluna XLSX ("A", "campo:X,Y"); XPath eSocial (Fase
+    # 7), especialmente com união de inclusão/alteração, passa disso facilmente.
+    origem: Mapped[str] = mapped_column(String(300))
     rotulo: Mapped[str] = mapped_column(String(200))
     campo: Mapped[str] = mapped_column(String(100))
     marcador: Mapped[str | None] = mapped_column(String(100))

@@ -13,7 +13,8 @@ from app.api.schemas import (
 )
 from app.core.config import get_settings
 from app.db.session import get_db
-from app.ingestion.xlsx import LINHA_PLANILHA, ArquivoInvalido, ler_xlsx
+from app.ingestion import ler_arquivo
+from app.ingestion.xlsx import LINHA_PLANILHA, ArquivoInvalido
 from app.metadata.resolver import TemplateNaoEncontrado, resolver_template
 from app.metadata.schemas import TemplateMetadata
 from app.scripts.generator import ContextoExecucao, ScriptNaoConfigurado, gerar_script
@@ -41,7 +42,7 @@ def _processar_arquivo(
     camada de API/Orquestração (Anexo A) reunindo o motor genérico, sem lógica de contexto
     específico de template embutida aqui."""
     try:
-        linhas_brutas = ler_xlsx(conteudo, template)
+        linhas_brutas = ler_arquivo(conteudo, template)
     except ArquivoInvalido as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

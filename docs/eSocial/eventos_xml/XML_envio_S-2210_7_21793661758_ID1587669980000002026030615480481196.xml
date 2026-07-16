@@ -1,0 +1,69 @@
+<eSocial xmlns="http://www.esocial.gov.br/schema/evt/evtCAT/v_S_01_03_00">
+  <evtCAT Id="ID1587669980000002026030615480481196">
+    <ideEvento>
+      <indRetif>1</indRetif>
+      <tpAmb>1</tpAmb>
+      <procEmi>1</procEmi>
+      <verProc>4.13.0</verProc>
+    </ideEvento>
+    <ideEmpregador>
+      <tpInsc>1</tpInsc>
+      <nrInsc>58766998</nrInsc>
+    </ideEmpregador>
+    <ideVinculo>
+      <cpfTrab>21793661758</cpfTrab>
+      <matricula>MLINDUSTRIA000000000002</matricula>
+    </ideVinculo>
+    <cat>
+      <dtAcid>2026-01-21</dtAcid>
+      <tpAcid>1</tpAcid>
+      <hrAcid>1400</hrAcid>
+      <hrsTrabAntesAcid>0500</hrsTrabAntesAcid>
+      <tpCat>1</tpCat>
+      <indCatObito>N</indCatObito>
+      <indComunPolicia>N</indComunPolicia>
+      <codSitGeradora>200008300</codSitGeradora>
+      <iniciatCAT>1</iniciatCAT>
+      <ultDiaTrab>2026-01-21</ultDiaTrab>
+      <houveAfast>S</houveAfast>
+      <localAcidente>
+        <tpLocal>1</tpLocal>
+        <tpLograd>R</tpLograd>
+        <dscLograd>JOSE LEANDRO</dscLograd>
+        <nrLograd>SN</nrLograd>
+        <complemento>QUADRA09 LOTE 05A 5</complemento>
+        <bairro>RETIRO SAO JOAQUIM</bairro>
+        <cep>24813129</cep>
+        <codMunic>3301900</codMunic>
+        <uf>RJ</uf>
+        <ideLocalAcid>
+          <tpInsc>1</tpInsc>
+          <nrInsc>58766998000110</nrInsc>
+        </ideLocalAcid>
+      </localAcidente>
+      <parteAtingida>
+        <codParteAting>755070000</codParteAting>
+        <lateralidade>1</lateralidade>
+      </parteAtingida>
+      <agenteCausador>
+        <codAgntCausador>303020040</codAgntCausador>
+      </agenteCausador>
+      <atestado>
+        <dtAtendimento>2026-01-21</dtAtendimento>
+        <hrAtendimento>1400</hrAtendimento>
+        <indInternacao>N</indInternacao>
+        <durTrat>15</durTrat>
+        <indAfast>S</indAfast>
+        <dscLesao>702010000</dscLesao>
+        <dscCompLesao>CORTE E PERFURAÇÃO</dscCompLesao>
+        <codCID>S610</codCID>
+        <emitente>
+          <nmEmit>maria helena</nmEmit>
+          <ideOC>1</ideOC>
+          <nrOC>52841870</nrOC>
+          <ufOC>RJ</ufOC>
+        </emitente>
+      </atestado>
+    </cat>
+  </evtCAT>
+<Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/><SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/><Reference URI=""><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/><Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/></Transforms><DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><DigestValue>IKdY6EhEdxHSodnM2Pma2EF1nodebBZGJFi0N3/pWmY=</DigestValue></Reference></SignedInfo><SignatureValue>Lmhlyx8Wpshr83kNGujqgL9IFW/M2sYTK3YDXDBRShscLGDO5u5sch5BCS08nTGpsgz8CGCE1MsKXr1rD8TRqWlkT79WhYpAKsU8HNAgM4NlRABKCE1Mh/+9vgt1nirxSnoxBnmQKd4qeR4ehpMEyiFI+iYsswHmzS+WoIA+Soq0EwFeDCmyNyZ4u/ObUPap8FsRpdeEDanMMcLxOVMkdsohQs94+lvVpU5GYyBh9CO7+go5PvqsOBRop2N6HQ1Ums2/aoCCEg4ctwTMs8AITS3gxfsOKHLaglVSojywPuWjAdO0bcwCS5gUXwEBlAiWT/iqRslPPtlFS9Dq6n8inQ==</SignatureValue><KeyInfo><X509Data><X509Certificate>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</X509Certificate></X509Data></KeyInfo></Signature></eSocial>
