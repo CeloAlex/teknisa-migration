@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -12,7 +14,7 @@ class TemplateNaoEncontrado(Exception):
 
 async def resolver_template(session: AsyncSession, codigo: str) -> TemplateMetadata:
     """Metadata Resolver (Anexo A): carrega o template, seu dicionário de dados e seus
-    templates de script do banco de metadados, decorando o contrato que o restante do motor
+    blocos de script do banco de metadados, decorando o contrato que o restante do motor
     (ingestion/transformation/validation/scripts) consome — nenhuma lógica de contexto
     específico vive em código, apenas nesta configuração."""
     stmt = (
@@ -41,18 +43,25 @@ async def resolver_template(session: AsyncSession, codigo: str) -> TemplateMetad
             regra_conversao=c.regra_conversao,
             eh_pk=c.eh_pk,
             gerador_pk=c.gerador_pk,
+            gerador_pk_contador=c.gerador_pk_contador,
+            gerador_pk_seed=c.gerador_pk_seed,
         )
         for c in template.campos
     ]
-    scripts = {
-        s.operacao: ScriptMetadata(
-            operacao=s.operacao,
-            dialeto_banco=s.dialeto_banco,
-            template_sql=s.template_sql,
-            template_rollback=s.template_rollback,
+
+    scripts: dict[str, list[ScriptMetadata]] = defaultdict(list)
+    for s in template.scripts:
+        scripts[s.operacao].append(
+            ScriptMetadata(
+                operacao=s.operacao,
+                dialeto_banco=s.dialeto_banco,
+                ordem=s.ordem,
+                condicao_campo=s.condicao_campo,
+                template_sql=s.template_sql,
+                template_rollback=s.template_rollback,
+            )
         )
-        for s in template.scripts
-    }
+
     return TemplateMetadata(
         codigo=template.codigo,
         nome=template.nome,
@@ -61,5 +70,5 @@ async def resolver_template(session: AsyncSession, codigo: str) -> TemplateMetad
         header_row=template.header_row,
         data_start_row=template.data_start_row,
         campos=campos,
-        scripts=scripts,
+        scripts=dict(scripts),
     )

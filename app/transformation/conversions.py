@@ -4,6 +4,8 @@ from collections.abc import Callable
 from datetime import date, datetime
 from typing import Any
 
+from openpyxl.utils.datetime import from_excel
+
 from app.metadata.schemas import CampoMetadata
 
 ConversaoFn = Callable[[Any, CampoMetadata], Any]
@@ -18,7 +20,13 @@ def _trim(valor: Any, campo: CampoMetadata) -> str:
 def _remover_mascara(valor: Any, campo: CampoMetadata) -> str:
     if valor is None:
         return ""
-    return re.sub(r"[\s\-./\\]", "", str(valor))
+    return re.sub(r"[\s\-./\\_,]", "", str(valor))
+
+
+def _remover_aspas_e_comercial(valor: Any, campo: CampoMetadata) -> str:
+    """trim + remoção de aspas simples e "&" (Seção 13.2 — nomes/razões sociais que
+    alimentam templates de script com o valor entre aspas simples)."""
+    return _trim(valor, campo).replace("'", "").replace("&", "")
 
 
 def _upper_sem_acento(valor: Any, campo: CampoMetadata) -> str:
@@ -40,6 +48,12 @@ def _data_br(valor: Any, campo: CampoMetadata) -> str:
         return valor.strftime("%d/%m/%Y")
     if isinstance(valor, date):
         return valor.strftime("%d/%m/%Y")
+    if isinstance(valor, (int, float)):
+        # Nem toda célula de data do XLSX chega como datetime — quando o formato de
+        # número da célula não é reconhecido como data pelo openpyxl (inconsistência comum
+        # nas planilhas reais, ex. 02_Ocupação), o valor chega como serial numérico puro
+        # (ex. 33022 = 29/05/1990). Equivalente ao XLSX.SSF.parse_date_code do protótipo.
+        return from_excel(valor).strftime("%d/%m/%Y")
     texto = str(valor)
     partes = re.split(r"[/-]", texto)
     if len(partes) == 3:
@@ -61,17 +75,49 @@ def _vazio_para_n(valor: Any, campo: CampoMetadata) -> str:
     return texto if texto else "N"
 
 
+def _nenhum_vazio(valor: Any, campo: CampoMetadata) -> bool:
+    """Regra de campo derivado (Seção 7.6/26.4, "preenchimento condicional"): recebe a lista
+    de valores dos campos referenciados em `origem="campo:A,B"` e responde se todos estão
+    preenchidos — usado para condicionar blocos de INSERT (ex.: só inserir endereço se tipo
+    de endereço E logradouro estiverem preenchidos)."""
+    valores = valor if isinstance(valor, list) else [valor]
+    return all(v not in (None, "") for v in valores)
+
+
+def _primeiro_nao_vazio(valor: Any, campo: CampoMetadata) -> str:
+    """Regra de campo derivado: recebe a lista de valores dos campos referenciados em
+    `origem="campo:A,B,C"` e devolve o primeiro não vazio (ex.: nome do parceiro de negócio
+    de Estrutura = Razão Social, senão Nome Fantasia, senão Nome da Estrutura)."""
+    valores = valor if isinstance(valor, list) else [valor]
+    for v in valores:
+        if v not in (None, ""):
+            return str(v)
+    return ""
+
+
+def _cbo(valor: Any, campo: CampoMetadata) -> str:
+    """CBO (Seção 13.2): sem validação de formato hoje, mas precisa virar o literal `NULL`
+    quando vazio, pois o marcador é usado sem aspas no template de script (posição
+    numérica) — equivalente a "vazio => NULL; senão remove espaço/./,/-/_ e tab"."""
+    texto = _remover_mascara(valor, campo)
+    return texto if texto else "NULL"
+
+
 # Registro nomeado de regras de conversão (equivalente às fórmulas TRIM/SUBSTITUTE/TEXT das
 # planilhas — Seção 6/7.2) — o dicionário de dados referencia estas chaves por nome, nunca
 # por código específico de template.
 CONVERSOES: dict[str, ConversaoFn] = {
     "trim": _trim,
     "remover_mascara": _remover_mascara,
+    "remover_aspas_e_comercial": _remover_aspas_e_comercial,
     "upper_sem_acento": _upper_sem_acento,
     "zero_esquerda": _zero_esquerda,
     "data_br": _data_br,
     "numero_decimal": _numero_decimal,
     "vazio_para_n": _vazio_para_n,
+    "nenhum_vazio": _nenhum_vazio,
+    "primeiro_nao_vazio": _primeiro_nao_vazio,
+    "cbo": _cbo,
 }
 
 

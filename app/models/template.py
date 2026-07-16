@@ -24,7 +24,7 @@ class Template(Base):
         back_populates="template", order_by="TemplateCampo.ordem", cascade="all, delete-orphan"
     )
     scripts: Mapped[list["TemplateScript"]] = relationship(
-        back_populates="template", cascade="all, delete-orphan"
+        back_populates="template", order_by="TemplateScript.ordem", cascade="all, delete-orphan"
     )
 
 
@@ -50,12 +50,22 @@ class TemplateCampo(Base):
     regra_validacao: Mapped[str | None] = mapped_column(Text)
     eh_pk: Mapped[bool] = mapped_column(Boolean, default=False)
     gerador_pk: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Preenchidos apenas quando gerador_pk=True: nome do contador e semente iniciais usados
+    # pelo Key Resolution Service (Seção 6.1) — equivalente ao par (CDCONTADOR, seed) que o
+    # protótipo declara por campo em pkGeracao.
+    gerador_pk_contador: Mapped[str | None] = mapped_column(String(100))
+    gerador_pk_seed: Mapped[int | None] = mapped_column(Integer)
 
     template: Mapped["Template"] = relationship(back_populates="campos")
 
 
 class TemplateScript(Base):
-    """Template de script com marcadores @CAMPO@, por operação e dialeto de banco (Seção 6.2 / 10)."""
+    """Bloco de template de script com marcadores @CAMPO@, por operação e dialeto de banco
+    (Seção 6.2 / 10). Um template pode ter mais de um bloco para a mesma operação — cada
+    linha aprovada gera um INSERT por bloco, na ordem declarada, pulando blocos cuja
+    `condicao_campo` (um campo booleano do dicionário) resolver como falso/vazio — o padrão
+    de "bloco condicional" identificado na Seção 26.4 (ex.: endereço de Estrutura só é
+    inserido se tipo de endereço e logradouro estiverem preenchidos)."""
 
     __tablename__ = "template_script"
 
@@ -63,6 +73,8 @@ class TemplateScript(Base):
     template_id: Mapped[int] = mapped_column(ForeignKey("template.id"), index=True)
     operacao: Mapped[str] = mapped_column(String(20))
     dialeto_banco: Mapped[str] = mapped_column(String(20))
+    ordem: Mapped[int] = mapped_column(Integer, default=1)
+    condicao_campo: Mapped[str | None] = mapped_column(String(100))
     template_sql: Mapped[str] = mapped_column(Text)
     template_rollback: Mapped[str | None] = mapped_column(Text)
 

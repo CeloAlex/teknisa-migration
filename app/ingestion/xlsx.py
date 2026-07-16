@@ -26,7 +26,13 @@ def ler_xlsx(conteudo: bytes, template: TemplateMetadata) -> list[dict[str, Any]
     sheet_name = template.sheet_name
     planilha = workbook[sheet_name] if sheet_name and sheet_name in workbook.sheetnames else workbook[workbook.sheetnames[0]]
 
-    origens_planilha = sorted({c.origem for c in template.campos if not c.vem_do_contexto})
+    origens_planilha = sorted(
+        {
+            c.origem
+            for c in template.campos
+            if not c.vem_do_contexto and not c.eh_derivado and not c.gerador_pk
+        }
+    )
     colunas_por_origem = {origem: column_index_from_string(origem) for origem in origens_planilha}
 
     data_start_row = template.data_start_row or 2

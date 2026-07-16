@@ -38,7 +38,7 @@ class ValidacaoResponse(BaseModel):
 
 class LinhaResultadoResponse(BaseModel):
     linha: int | None
-    campos: dict[str, str | int | float | None]
+    campos: dict[str, str | bool | int | float | None]
     validacoes: list[ValidacaoResponse]
 
 

@@ -21,6 +21,8 @@ class CampoMetadata:
     regra_conversao: str | None
     eh_pk: bool
     gerador_pk: bool
+    gerador_pk_contador: str | None = None
+    gerador_pk_seed: int | None = None
 
     @property
     def vem_do_contexto(self) -> bool:
@@ -29,14 +31,27 @@ class CampoMetadata:
         return self.origem.startswith("parametro_execucao.")
 
     @property
-    def chave_contexto(self) -> str:
-        return self.origem.removeprefix("parametro_execucao.")
+    def eh_derivado(self) -> bool:
+        """True quando o valor não vem do arquivo nem do contexto, e sim de outros campos já
+        transformados desta mesma linha (ex.: um flag booleano de "tem endereço?" calculado a
+        partir de dois outros campos — Seção 7.6/26.4, "preenchimento condicional")."""
+        return self.origem.startswith("campo:")
+
+    @property
+    def campos_referenciados(self) -> list[str]:
+        return self.origem.removeprefix("campo:").split(",")
 
 
 @dataclass(frozen=True, slots=True)
 class ScriptMetadata:
+    """Um bloco de template de script (Seção 6.2/10) — um template pode ter vários blocos
+    para a mesma operação (ex.: Estrutura gera um bloco fixo de PARCNEGOCIO/ESTRUTURAM/
+    ESTRUTURAH e um bloco condicional de ENDERECOPARC, Seção 26.4)."""
+
     operacao: str
     dialeto_banco: str
+    ordem: int
+    condicao_campo: str | None
     template_sql: str
     template_rollback: str | None
 
@@ -44,7 +59,7 @@ class ScriptMetadata:
 @dataclass(frozen=True, slots=True)
 class TemplateMetadata:
     """Contrato completo de um template resolvido (Seção 5.2) — dicionário de dados +
-    template(s) de script, prontos para o motor genérico consumir."""
+    bloco(s) de script por operação, prontos para o motor genérico consumir."""
 
     codigo: str
     nome: str
@@ -53,4 +68,4 @@ class TemplateMetadata:
     header_row: int | None
     data_start_row: int | None
     campos: list[CampoMetadata]
-    scripts: dict[str, ScriptMetadata] = field(default_factory=dict)
+    scripts: dict[str, list[ScriptMetadata]] = field(default_factory=dict)

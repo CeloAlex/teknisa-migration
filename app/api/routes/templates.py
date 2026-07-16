@@ -165,7 +165,7 @@ async def gerar_script_importacao(
     settings = get_settings()
     contexto = ContextoExecucao(nr_org=nr_org, usuario_tecnico=settings.usuario_tecnico_padrao)
     try:
-        script_sql = gerar_script(linhas_validas, template, contexto, operacao=operacao)
+        script_sql = await gerar_script(db, linhas_validas, template, contexto, operacao=operacao)
     except ScriptNaoConfigurado as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

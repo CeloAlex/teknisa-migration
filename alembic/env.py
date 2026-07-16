@@ -9,6 +9,7 @@ from app.core.config import get_settings
 from app.db.base import Base
 
 # Módulos de modelos ORM registrados em Base.metadata antes do autogenerate.
+import app.models.novocodigo  # noqa: F401,E402
 import app.models.template  # noqa: F401,E402
 import app.models.tipo_migracao  # noqa: F401,E402
 
