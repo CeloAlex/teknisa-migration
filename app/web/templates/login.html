@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Entrar — Plataforma de Migração de Dados</title>
-  <link rel="stylesheet" href="/portal/static/css/app.css">
+  <link rel="stylesheet" href="/portal-migration/static/css/app.css">
 </head>
 <body>
 <div class="login-wrap">
@@ -12,7 +12,7 @@
     <h2>Plataforma de Migração de Dados</h2>
     <div class="desc">Teknisa — ERP/HCM</div>
     {% if erro %}<div class="flash erro">{{ erro }}</div>{% endif %}
-    <form method="post" action="/portal/login">
+    <form method="post" action="/portal-migration/login">
       <div class="field">
         <label for="email">E-mail</label>
         <input type="email" id="email" name="email" required autofocus>

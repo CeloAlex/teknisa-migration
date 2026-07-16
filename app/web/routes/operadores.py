@@ -10,7 +10,7 @@ from app.models.usuario import Papel, Usuario
 from app.web.deps import exigir_papel
 from app.web.templates_env import templates
 
-router = APIRouter(prefix="/portal/admin/operadores", tags=["portal-admin-operadores"])
+router = APIRouter(prefix="/portal-migration/admin/operadores", tags=["portal-admin-operadores"])
 
 PAPEIS_SEM_ORGANIZACAO = {Papel.ADMINISTRADOR.value, Papel.AUDITOR.value}
 
@@ -83,7 +83,7 @@ async def criar(
         senha_hash=hash_senha(senha),
     )
     db.add(novo)
-    return RedirectResponse(url="/portal/admin/operadores", status_code=303)
+    return RedirectResponse(url="/portal-migration/admin/operadores", status_code=303)
 
 
 @router.get("/{operador_id}/editar")
@@ -138,7 +138,7 @@ async def editar(
     alvo.nr_org = None if papel in PAPEIS_SEM_ORGANIZACAO else nr_org
     if senha:
         alvo.senha_hash = hash_senha(senha)
-    return RedirectResponse(url="/portal/admin/operadores", status_code=303)
+    return RedirectResponse(url="/portal-migration/admin/operadores", status_code=303)
 
 
 @router.post("/{operador_id}/toggle-ativo")
@@ -150,4 +150,4 @@ async def alternar_ativo(
     alvo = await db.get(Usuario, operador_id)
     if alvo is not None:
         alvo.ativo = not alvo.ativo
-    return RedirectResponse(url="/portal/admin/operadores", status_code=303)
+    return RedirectResponse(url="/portal-migration/admin/operadores", status_code=303)

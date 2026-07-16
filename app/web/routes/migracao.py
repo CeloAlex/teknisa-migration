@@ -16,7 +16,7 @@ from app.validation.classificacao import Classificacao
 from app.web.deps import SemPermissao, exigir_login, exigir_papel
 from app.web.templates_env import templates
 
-router = APIRouter(prefix="/portal", tags=["portal-migracao"])
+router = APIRouter(prefix="/portal-migration", tags=["portal-migracao"])
 
 
 def _verificar_org(usuario: Usuario, migracao: Migracao) -> None:
@@ -161,7 +161,7 @@ async def detalhe_migracao(
 
 
 def _redirect_aba(migracao_id: int, aba: str) -> RedirectResponse:
-    return RedirectResponse(url=f"/portal/migracoes/{migracao_id}?aba={aba}", status_code=303)
+    return RedirectResponse(url=f"/portal-migration/migracoes/{migracao_id}?aba={aba}", status_code=303)
 
 
 def _flash_erro(request: Request, mensagem: str) -> None:

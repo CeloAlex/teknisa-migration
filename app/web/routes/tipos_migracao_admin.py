@@ -11,7 +11,7 @@ from app.models.usuario import Papel, Usuario
 from app.web.deps import exigir_papel
 from app.web.templates_env import templates
 
-router = APIRouter(prefix="/portal/admin/tipos-migracao", tags=["portal-admin-tipos-migracao"])
+router = APIRouter(prefix="/portal-migration/admin/tipos-migracao", tags=["portal-admin-tipos-migracao"])
 
 
 async def _carregar_tipo(db: AsyncSession, codigo: str) -> TipoMigracao | None:
@@ -73,7 +73,7 @@ async def criar(
             sequencia_obrigatoria=sequencia_obrigatoria,
         )
     )
-    return RedirectResponse(url=f"/portal/admin/tipos-migracao/{codigo}", status_code=303)
+    return RedirectResponse(url=f"/portal-migration/admin/tipos-migracao/{codigo}", status_code=303)
 
 
 @router.get("/{codigo}")
@@ -109,7 +109,7 @@ async def adicionar_template(
             tipo_migracao_id=tipo.id, template_id=template_id, ordem=ordem, obrigatorio=obrigatorio
         )
     )
-    return RedirectResponse(url=f"/portal/admin/tipos-migracao/{codigo}", status_code=303)
+    return RedirectResponse(url=f"/portal-migration/admin/tipos-migracao/{codigo}", status_code=303)
 
 
 @router.post("/{codigo}/templates/{tmt_id}/editar")
@@ -125,7 +125,7 @@ async def editar_template_do_tipo(
     if alvo is not None:
         alvo.ordem = ordem
         alvo.obrigatorio = obrigatorio
-    return RedirectResponse(url=f"/portal/admin/tipos-migracao/{codigo}", status_code=303)
+    return RedirectResponse(url=f"/portal-migration/admin/tipos-migracao/{codigo}", status_code=303)
 
 
 @router.post("/{codigo}/templates/{tmt_id}/remover")
@@ -138,7 +138,7 @@ async def remover_template_do_tipo(
     alvo = await db.get(TipoMigracaoTemplate, tmt_id)
     if alvo is not None:
         await db.delete(alvo)
-    return RedirectResponse(url=f"/portal/admin/tipos-migracao/{codigo}", status_code=303)
+    return RedirectResponse(url=f"/portal-migration/admin/tipos-migracao/{codigo}", status_code=303)
 
 
 @router.post("/{codigo}/dependencias/adicionar")
@@ -155,7 +155,7 @@ async def adicionar_dependencia(
             depende_de_template_id=depende_de_template_id,
         )
     )
-    return RedirectResponse(url=f"/portal/admin/tipos-migracao/{codigo}", status_code=303)
+    return RedirectResponse(url=f"/portal-migration/admin/tipos-migracao/{codigo}", status_code=303)
 
 
 @router.post("/{codigo}/dependencias/{dep_id}/remover")
@@ -168,4 +168,4 @@ async def remover_dependencia(
     alvo = await db.get(TipoMigracaoTemplateDependencia, dep_id)
     if alvo is not None:
         await db.delete(alvo)
-    return RedirectResponse(url=f"/portal/admin/tipos-migracao/{codigo}", status_code=303)
+    return RedirectResponse(url=f"/portal-migration/admin/tipos-migracao/{codigo}", status_code=303)

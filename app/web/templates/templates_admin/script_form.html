@@ -3,7 +3,7 @@
 {% block conteudo %}
 <div class="card">
   <h2>{{ "Editar bloco de script" if script else "Adicionar bloco de script" }} — {{ codigo }}</h2>
-  <form method="post" action="{{ '/portal/admin/templates/' ~ codigo ~ '/scripts/' ~ script.id ~ '/editar' if script else '/portal/admin/templates/' ~ codigo ~ '/scripts/novo' }}">
+  <form method="post" action="{{ '/portal-migration/admin/templates/' ~ codigo ~ '/scripts/' ~ script.id ~ '/editar' if script else '/portal-migration/admin/templates/' ~ codigo ~ '/scripts/novo' }}">
     <div class="grid4">
       <div class="field">
         <label for="operacao">Operação</label>
@@ -35,7 +35,7 @@
       <textarea id="template_rollback" name="template_rollback" rows="6">{{ script.template_rollback if script else '' }}</textarea>
     </div>
     <div class="btnbar">
-      <a class="btn secondary" href="/portal/admin/templates/{{ codigo }}">Cancelar</a>
+      <a class="btn secondary" href="/portal-migration/admin/templates/{{ codigo }}">Cancelar</a>
       <button class="btn" type="submit">Salvar</button>
     </div>
   </form>

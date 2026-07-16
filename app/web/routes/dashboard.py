@@ -16,7 +16,7 @@ from app.models.usuario import Papel, Usuario
 from app.web.deps import exigir_login, exigir_papel
 from app.web.templates_env import STATUS_MIGRACAO_META, templates
 
-router = APIRouter(prefix="/portal", tags=["portal-dashboard"])
+router = APIRouter(prefix="/portal-migration", tags=["portal-dashboard"])
 
 ESTADOS_FINALIZADOS = {
     MigracaoStatus.CONCLUIDA.value,
@@ -120,4 +120,4 @@ async def criar_nova_migracao(
             {"usuario": usuario, "organizacoes": organizacoes, "tipos": tipos, "erro": exc.mensagem},
             status_code=exc.status_code,
         )
-    return RedirectResponse(url=f"/portal/migracoes/{migracao.id}", status_code=303)
+    return RedirectResponse(url=f"/portal-migration/migracoes/{migracao.id}", status_code=303)

@@ -9,15 +9,15 @@ from app.models.usuario import Papel, Usuario
 from app.web.deps import existe_algum_usuario, usuario_logado
 from app.web.templates_env import templates
 
-router = APIRouter(prefix="/portal", tags=["portal-auth"])
+router = APIRouter(prefix="/portal-migration", tags=["portal-auth"])
 
 
 @router.get("/login")
 async def tela_login(request: Request, db: AsyncSession = Depends(get_db)):
     if await usuario_logado(request, db) is not None:
-        return RedirectResponse(url="/portal/", status_code=303)
+        return RedirectResponse(url="/portal-migration/", status_code=303)
     if not await existe_algum_usuario(db):
-        return RedirectResponse(url="/portal/primeiro-acesso", status_code=303)
+        return RedirectResponse(url="/portal-migration/primeiro-acesso", status_code=303)
     return templates.TemplateResponse(request, "login.html", {})
 
 
@@ -34,19 +34,19 @@ async def fazer_login(
             request, "login.html", {"erro": "E-mail ou senha inválidos."}, status_code=401
         )
     request.session["usuario_id"] = usuario.id
-    return RedirectResponse(url="/portal/", status_code=303)
+    return RedirectResponse(url="/portal-migration/", status_code=303)
 
 
 @router.post("/logout")
 async def fazer_logout(request: Request):
     request.session.clear()
-    return RedirectResponse(url="/portal/login", status_code=303)
+    return RedirectResponse(url="/portal-migration/login", status_code=303)
 
 
 @router.get("/primeiro-acesso")
 async def tela_primeiro_acesso(request: Request, db: AsyncSession = Depends(get_db)):
     if await existe_algum_usuario(db):
-        return RedirectResponse(url="/portal/login", status_code=303)
+        return RedirectResponse(url="/portal-migration/login", status_code=303)
     return templates.TemplateResponse(request, "primeiro_acesso.html", {})
 
 
@@ -61,7 +61,7 @@ async def criar_primeiro_administrador(
     db: AsyncSession = Depends(get_db),
 ):
     if await existe_algum_usuario(db):
-        return RedirectResponse(url="/portal/login", status_code=303)
+        return RedirectResponse(url="/portal-migration/login", status_code=303)
     if senha != confirmar_senha:
         return templates.TemplateResponse(
             request, "primeiro_acesso.html", {"erro": "As senhas não coincidem."}, status_code=400
@@ -82,4 +82,4 @@ async def criar_primeiro_administrador(
     db.add(usuario)
     await db.flush()
     request.session["usuario_id"] = usuario.id
-    return RedirectResponse(url="/portal/", status_code=303)
+    return RedirectResponse(url="/portal-migration/", status_code=303)

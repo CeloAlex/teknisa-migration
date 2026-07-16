@@ -37,7 +37,7 @@ SENHA_PADRAO_TESTE = "senha-teste-123"
 def usuario_teste() -> Callable[..., Coroutine[None, None, tuple[Usuario, str]]]:
     """Fábrica de usuário do portal descartável, com e-mail aleatório (mesmo motivo do
     `nr_org_teste`: o banco de testes nunca é resetado entre execuções). Devolve o objeto
-    `Usuario` já persistido e a senha em texto puro usada para logar via `/portal/login`."""
+    `Usuario` já persistido e a senha em texto puro usada para logar via `/portal-migration/login`."""
 
     async def _criar(papel: str, nr_org: int | None = None, senha: str = SENHA_PADRAO_TESTE) -> tuple[Usuario, str]:
         sufixo = random.randint(1_000_000, 9_999_999)
@@ -58,5 +58,5 @@ def usuario_teste() -> Callable[..., Coroutine[None, None, tuple[Usuario, str]]]
 
 
 async def login(client: AsyncClient, email: str, senha: str) -> None:
-    resposta = await client.post("/portal/login", data={"email": email, "senha": senha})
+    resposta = await client.post("/portal-migration/login", data={"email": email, "senha": senha})
     assert resposta.status_code == 303, resposta.text

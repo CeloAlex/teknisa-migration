@@ -12,7 +12,7 @@
         <td>{{ org.nome }}</td>
         <td><span class="badge {% if org.ativo %}green{% else %}gray{% endif %}">{{ "Ativa" if org.ativo else "Inativa" }}</span></td>
         <td class="table-actions">
-          <form method="post" action="/portal/admin/organizacoes/{{ org.nr_org }}/toggle-ativo">
+          <form method="post" action="/portal-migration/admin/organizacoes/{{ org.nr_org }}/toggle-ativo">
             <button class="btn small {% if org.ativo %}danger{% else %}secondary{% endif %}" type="submit">
               {{ "Desativar" if org.ativo else "Reativar" }}
             </button>
@@ -23,7 +23,7 @@
     </tbody>
   </table>
   <div class="btnbar">
-    <a class="btn" href="/portal/admin/organizacoes/nova">+ Nova organização</a>
+    <a class="btn" href="/portal-migration/admin/organizacoes/nova">+ Nova organização</a>
   </div>
 </div>
 {% endblock %}

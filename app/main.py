@@ -39,7 +39,7 @@ def create_app() -> FastAPI:
     app.include_router(web_templates_admin.router)
     app.include_router(web_templates_admin.router_catalogo)
     app.include_router(web_tipos_migracao_admin.router)
-    app.mount("/portal/static", StaticFiles(directory=str(WEB_BASE_DIR / "static")), name="portal-static")
+    app.mount("/portal-migration/static", StaticFiles(directory=str(WEB_BASE_DIR / "static")), name="portal-static")
 
     @app.exception_handler(AcaoInvalida)
     async def _acao_invalida(request: Request, exc: AcaoInvalida) -> JSONResponse:
@@ -52,7 +52,7 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(NaoAutenticado)
     async def _redirecionar_login(request: Request, exc: NaoAutenticado) -> RedirectResponse:
-        return RedirectResponse(url="/portal/login", status_code=303)
+        return RedirectResponse(url="/portal-migration/login", status_code=303)
 
     @app.exception_handler(SemPermissao)
     async def _sem_permissao(request: Request, exc: SemPermissao):

@@ -13,13 +13,13 @@
         <td>{{ t.versao }}</td>
         <td>{% if t.eh_catalogo %}<span class="badge blue">Sim</span>{% else %}—{% endif %}</td>
         <td><span class="badge {% if t.ativo %}green{% else %}gray{% endif %}">{{ "Ativo" if t.ativo else "Inativo" }}</span></td>
-        <td><a class="btn small secondary" href="/portal/admin/templates/{{ t.codigo }}">Abrir</a></td>
+        <td><a class="btn small secondary" href="/portal-migration/admin/templates/{{ t.codigo }}">Abrir</a></td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
   <div class="btnbar">
-    <a class="btn" href="/portal/admin/templates/novo">+ Criar novo template</a>
+    <a class="btn" href="/portal-migration/admin/templates/novo">+ Criar novo template</a>
   </div>
 </div>
 {% endblock %}

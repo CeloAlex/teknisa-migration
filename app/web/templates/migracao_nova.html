@@ -4,7 +4,7 @@
 <div class="card">
   <h2>Nova migração</h2>
   {% if erro %}<div class="flash erro">{{ erro }}</div>{% endif %}
-  <form method="post" action="/portal/migracoes/nova">
+  <form method="post" action="/portal-migration/migracoes/nova">
     <div class="field">
       <label for="nr_org">Organização</label>
       <select id="nr_org" name="nr_org" required>
@@ -23,7 +23,7 @@
     </div>
     <small class="hint">O operador responsável será registrado como {{ usuario.nome }} (usuário logado).</small>
     <div class="btnbar">
-      <a class="btn secondary" href="/portal/">Cancelar</a>
+      <a class="btn secondary" href="/portal-migration/">Cancelar</a>
       <button class="btn" type="submit">Criar migração</button>
     </div>
   </form>

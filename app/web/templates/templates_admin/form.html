@@ -4,7 +4,7 @@
 <div class="card">
   <h2>Criar novo template</h2>
   {% if erro %}<div class="flash erro">{{ erro }}</div>{% endif %}
-  <form method="post" action="/portal/admin/templates/novo">
+  <form method="post" action="/portal-migration/admin/templates/novo">
     <div class="grid2">
       <div class="field">
         <label for="codigo">Código</label>
@@ -44,7 +44,7 @@
       <textarea id="pre_requisito_externo" name="pre_requisito_externo"></textarea>
     </div>
     <div class="btnbar">
-      <a class="btn secondary" href="/portal/admin/templates">Cancelar</a>
+      <a class="btn secondary" href="/portal-migration/admin/templates">Cancelar</a>
       <button class="btn" type="submit">Criar</button>
     </div>
   </form>

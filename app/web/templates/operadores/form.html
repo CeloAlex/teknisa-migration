@@ -4,7 +4,7 @@
 <div class="card">
   <h2>{{ "Editar operador" if operador else "Novo operador" }}</h2>
   {% if erro %}<div class="flash erro">{{ erro }}</div>{% endif %}
-  <form method="post" action="{{ '/portal/admin/operadores/' ~ operador.id ~ '/editar' if operador else '/portal/admin/operadores/novo' }}">
+  <form method="post" action="{{ '/portal-migration/admin/operadores/' ~ operador.id ~ '/editar' if operador else '/portal-migration/admin/operadores/novo' }}">
     <div class="grid2">
       <div class="field">
         <label for="nome">Nome</label>
@@ -40,7 +40,7 @@
       </div>
     </div>
     <div class="btnbar">
-      <a class="btn secondary" href="/portal/admin/operadores">Cancelar</a>
+      <a class="btn secondary" href="/portal-migration/admin/operadores">Cancelar</a>
       <button class="btn" type="submit">Salvar</button>
     </div>
   </form>

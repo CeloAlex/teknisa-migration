@@ -4,7 +4,7 @@
 <div class="card">
   <h2>Criar novo tipo de migração</h2>
   {% if erro %}<div class="flash erro">{{ erro }}</div>{% endif %}
-  <form method="post" action="/portal/admin/tipos-migracao/novo">
+  <form method="post" action="/portal-migration/admin/tipos-migracao/novo">
     <div class="grid2">
       <div class="field">
         <label for="codigo">Código</label>
@@ -35,7 +35,7 @@
       <label for="permite_concorrencia" style="margin:0;">Permite mais de uma migração ativa simultânea por organização</label>
     </div>
     <div class="btnbar">
-      <a class="btn secondary" href="/portal/admin/tipos-migracao">Cancelar</a>
+      <a class="btn secondary" href="/portal-migration/admin/tipos-migracao">Cancelar</a>
       <button class="btn" type="submit">Criar</button>
     </div>
   </form>

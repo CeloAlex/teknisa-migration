@@ -15,7 +15,7 @@
   {% elif mts.status != template_status.VALIDADO.value %}
     <div class="banner block">Este template ainda não passou pela validação sem erros impeditivos.</div>
   {% elif usuario.papel in ('operador', 'aprovador_funcional', 'administrador') %}
-    <form method="post" action="/portal/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/aprovar-dados">
+    <form method="post" action="/portal-migration/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/aprovar-dados">
       <div class="btnbar">
         <button class="btn success" type="submit">Aprovar dados de {{ mts.template.nome }}</button>
       </div>

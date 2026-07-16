@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Primeiro acesso — Plataforma de Migração de Dados</title>
-  <link rel="stylesheet" href="/portal/static/css/app.css">
+  <link rel="stylesheet" href="/portal-migration/static/css/app.css">
 </head>
 <body>
 <div class="login-wrap">
@@ -15,7 +15,7 @@
       cadastrar os demais operadores em "Operadores".
     </div>
     {% if erro %}<div class="flash erro">{{ erro }}</div>{% endif %}
-    <form method="post" action="/portal/primeiro-acesso">
+    <form method="post" action="/portal-migration/primeiro-acesso">
       <div class="field">
         <label for="nome">Nome completo</label>
         <input type="text" id="nome" name="nome" required autofocus>

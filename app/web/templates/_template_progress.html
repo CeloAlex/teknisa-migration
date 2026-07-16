@@ -1,6 +1,6 @@
 <div id="progresso-{{ mts.template.codigo }}"
      {% if mts.status == 'em_importacao' %}
-     hx-get="/portal/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/progresso"
+     hx-get="/portal-migration/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/progresso"
      hx-trigger="every 1s"
      hx-swap="outerHTML"
      {% endif %}>
@@ -16,11 +16,11 @@
   <div class="btnbar">
     {% if mts.pausado %}
     <button class="btn small" type="button"
-      hx-post="/portal/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/continuar"
+      hx-post="/portal-migration/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/continuar"
       hx-target="#progresso-{{ mts.template.codigo }}" hx-swap="outerHTML">Continuar</button>
     {% else %}
     <button class="btn small secondary" type="button"
-      hx-post="/portal/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/pausar"
+      hx-post="/portal-migration/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/pausar"
       hx-target="#progresso-{{ mts.template.codigo }}" hx-swap="outerHTML">Pausar</button>
     {% endif %}
   </div>

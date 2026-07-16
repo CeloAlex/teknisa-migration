@@ -12,8 +12,8 @@ from app.models.usuario import Papel, Usuario
 from app.web.deps import exigir_papel
 from app.web.templates_env import templates
 
-router = APIRouter(prefix="/portal/admin/templates", tags=["portal-admin-templates"])
-router_catalogo = APIRouter(prefix="/portal/admin/catalogo-destino", tags=["portal-admin-catalogo-destino"])
+router = APIRouter(prefix="/portal-migration/admin/templates", tags=["portal-admin-templates"])
+router_catalogo = APIRouter(prefix="/portal-migration/admin/catalogo-destino", tags=["portal-admin-catalogo-destino"])
 
 
 def _flash_catalogo(request: Request, mensagem: str, tipo: str = "ok") -> None:
@@ -80,7 +80,7 @@ async def criar(
             pre_requisito_externo=pre_requisito_externo or None,
         )
     )
-    return RedirectResponse(url=f"/portal/admin/templates/{codigo}", status_code=303)
+    return RedirectResponse(url=f"/portal-migration/admin/templates/{codigo}", status_code=303)
 
 
 @router.get("/{codigo}")
@@ -170,7 +170,7 @@ async def criar_campo(
             gerador_pk_seed=gerador_pk_seed,
         )
     )
-    return RedirectResponse(url=f"/portal/admin/templates/{codigo}", status_code=303)
+    return RedirectResponse(url=f"/portal-migration/admin/templates/{codigo}", status_code=303)
 
 
 @router.get("/{codigo}/campos/{campo_id}/editar")
@@ -234,7 +234,7 @@ async def editar_campo(
     alvo.gerador_pk = gerador_pk
     alvo.gerador_pk_contador = gerador_pk_contador or None
     alvo.gerador_pk_seed = gerador_pk_seed
-    return RedirectResponse(url=f"/portal/admin/templates/{codigo}", status_code=303)
+    return RedirectResponse(url=f"/portal-migration/admin/templates/{codigo}", status_code=303)
 
 
 @router.post("/{codigo}/campos/{campo_id}/excluir")
@@ -247,7 +247,7 @@ async def excluir_campo(
     alvo = await db.get(TemplateCampo, campo_id)
     if alvo is not None:
         await db.delete(alvo)
-    return RedirectResponse(url=f"/portal/admin/templates/{codigo}", status_code=303)
+    return RedirectResponse(url=f"/portal-migration/admin/templates/{codigo}", status_code=303)
 
 
 # --- blocos de script (@CAMPO@) ----------------------------------------------------------------
@@ -286,7 +286,7 @@ async def criar_script(
             template_rollback=template_rollback or None,
         )
     )
-    return RedirectResponse(url=f"/portal/admin/templates/{codigo}", status_code=303)
+    return RedirectResponse(url=f"/portal-migration/admin/templates/{codigo}", status_code=303)
 
 
 @router.get("/{codigo}/scripts/{script_id}/editar")
@@ -323,7 +323,7 @@ async def editar_script(
     alvo.condicao_campo = condicao_campo or None
     alvo.template_sql = template_sql
     alvo.template_rollback = template_rollback or None
-    return RedirectResponse(url=f"/portal/admin/templates/{codigo}", status_code=303)
+    return RedirectResponse(url=f"/portal-migration/admin/templates/{codigo}", status_code=303)
 
 
 @router.post("/{codigo}/scripts/{script_id}/excluir")
@@ -336,7 +336,7 @@ async def excluir_script(
     alvo = await db.get(TemplateScript, script_id)
     if alvo is not None:
         await db.delete(alvo)
-    return RedirectResponse(url=f"/portal/admin/templates/{codigo}", status_code=303)
+    return RedirectResponse(url=f"/portal-migration/admin/templates/{codigo}", status_code=303)
 
 
 # --- catálogo de destino (importador de DDL Oracle) -----------------------------------------
@@ -397,8 +397,8 @@ async def importar_ddl(
         _flash_catalogo(request, f"{nr_tabelas} tabela(s) e {nr_colunas} coluna(s) importadas do DDL.")
 
     if voltar:
-        return RedirectResponse(url=f"/portal/admin/templates/{voltar}", status_code=303)
-    return RedirectResponse(url="/portal/admin/templates", status_code=303)
+        return RedirectResponse(url=f"/portal-migration/admin/templates/{voltar}", status_code=303)
+    return RedirectResponse(url="/portal-migration/admin/templates", status_code=303)
 
 
 @router_catalogo.get("/{tabela_id}/colunas", response_class=HTMLResponse)

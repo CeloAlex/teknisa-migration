@@ -9,7 +9,7 @@ from app.models.usuario import Papel, Usuario
 from app.web.deps import exigir_papel
 from app.web.templates_env import templates
 
-router = APIRouter(prefix="/portal/admin/organizacoes", tags=["portal-admin-organizacoes"])
+router = APIRouter(prefix="/portal-migration/admin/organizacoes", tags=["portal-admin-organizacoes"])
 
 
 @router.get("")
@@ -46,7 +46,7 @@ async def criar(
             status_code=400,
         )
     db.add(Organizacao(nr_org=nr_org, nome=nome, ativo=True))
-    return RedirectResponse(url="/portal/admin/organizacoes", status_code=303)
+    return RedirectResponse(url="/portal-migration/admin/organizacoes", status_code=303)
 
 
 @router.post("/{nr_org}/toggle-ativo")
@@ -58,4 +58,4 @@ async def alternar_ativo(
     org = await db.get(Organizacao, nr_org)
     if org is not None:
         org.ativo = not org.ativo
-    return RedirectResponse(url="/portal/admin/organizacoes", status_code=303)
+    return RedirectResponse(url="/portal-migration/admin/organizacoes", status_code=303)

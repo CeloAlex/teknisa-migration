@@ -3,7 +3,7 @@
 {% block conteudo %}
 <div class="card">
   <h2>{{ "Editar campo do dicionário" if campo else "Adicionar campo ao dicionário" }} — {{ codigo }}</h2>
-  <form method="post" action="{{ '/portal/admin/templates/' ~ codigo ~ '/campos/' ~ campo.id ~ '/editar' if campo else '/portal/admin/templates/' ~ codigo ~ '/campos/novo' }}">
+  <form method="post" action="{{ '/portal-migration/admin/templates/' ~ codigo ~ '/campos/' ~ campo.id ~ '/editar' if campo else '/portal-migration/admin/templates/' ~ codigo ~ '/campos/novo' }}">
     <div class="grid3">
       <div class="field">
         <label for="ordem">Ordem</label>
@@ -90,7 +90,7 @@
       <label for="gerador_pk" style="margin:0;">Gera PK sequencial (Key Resolution Service)</label>
     </div>
     <div class="btnbar">
-      <a class="btn secondary" href="/portal/admin/templates/{{ codigo }}">Cancelar</a>
+      <a class="btn secondary" href="/portal-migration/admin/templates/{{ codigo }}">Cancelar</a>
       <button class="btn" type="submit">Salvar</button>
     </div>
   </form>
@@ -104,7 +104,7 @@ async function onSelecionarCatalogoTabela(select) {
   }
   document.getElementById('destino_tabela').value = select.options[select.selectedIndex].text;
   colunaSelect.innerHTML = '<option value="">— carregando —</option>';
-  const resposta = await fetch('/portal/admin/catalogo-destino/' + select.value + '/colunas');
+  const resposta = await fetch('/portal-migration/admin/catalogo-destino/' + select.value + '/colunas');
   colunaSelect.innerHTML = await resposta.text();
 }
 

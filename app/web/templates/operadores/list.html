@@ -15,8 +15,8 @@
         <td>{{ organizacoes_nome.get(op.nr_org, "Todas") if op.nr_org else "Todas" }}</td>
         <td><span class="badge {% if op.ativo %}green{% else %}gray{% endif %}">{{ "Ativo" if op.ativo else "Inativo" }}</span></td>
         <td class="table-actions">
-          <a class="btn small secondary" href="/portal/admin/operadores/{{ op.id }}/editar">Editar</a>
-          <form class="inline" method="post" action="/portal/admin/operadores/{{ op.id }}/toggle-ativo">
+          <a class="btn small secondary" href="/portal-migration/admin/operadores/{{ op.id }}/editar">Editar</a>
+          <form class="inline" method="post" action="/portal-migration/admin/operadores/{{ op.id }}/toggle-ativo">
             <button class="btn small {% if op.ativo %}danger{% else %}secondary{% endif %}" type="submit">
               {{ "Desativar" if op.ativo else "Reativar" }}
             </button>
@@ -27,7 +27,7 @@
     </tbody>
   </table>
   <div class="btnbar">
-    <a class="btn" href="/portal/admin/operadores/novo">+ Novo operador</a>
+    <a class="btn" href="/portal-migration/admin/operadores/novo">+ Novo operador</a>
   </div>
 </div>
 {% endblock %}

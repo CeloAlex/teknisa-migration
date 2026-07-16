@@ -16,7 +16,7 @@ async def test_criar_e_listar_operador(client: AsyncClient, usuario_teste, nr_or
     email = f"novo{random.randint(1000, 9999)}@example.com"
 
     criar = await client.post(
-        "/portal/admin/operadores/novo",
+        "/portal-migration/admin/operadores/novo",
         data={
             "nome": "Operador De Teste",
             "email": email,
@@ -29,7 +29,7 @@ async def test_criar_e_listar_operador(client: AsyncClient, usuario_teste, nr_or
     )
     assert criar.status_code == 303
 
-    listagem = await client.get("/portal/admin/operadores")
+    listagem = await client.get("/portal-migration/admin/operadores")
     assert listagem.status_code == 200
     assert "Operador De Teste" in listagem.text
 
@@ -39,7 +39,7 @@ async def test_criar_operador_com_email_duplicado_falha(client: AsyncClient, usu
     existente, _ = await usuario_teste(Papel.OPERADOR.value, nr_org=nr_org_teste)
 
     resposta = await client.post(
-        "/portal/admin/operadores/novo",
+        "/portal-migration/admin/operadores/novo",
         data={
             "nome": "Duplicado",
             "email": existente.email,
@@ -57,18 +57,18 @@ async def test_criar_e_listar_organizacao(client: AsyncClient, usuario_teste) ->
     nr_org = random.randint(10_000_000, 99_999_999)
 
     criar = await client.post(
-        "/portal/admin/organizacoes/nova",
+        "/portal-migration/admin/organizacoes/nova",
         data={"nr_org": nr_org, "nome": "Organização Admin Teste"},
         follow_redirects=False,
     )
     assert criar.status_code == 303
 
-    listagem = await client.get("/portal/admin/organizacoes")
+    listagem = await client.get("/portal-migration/admin/organizacoes")
     assert "Organização Admin Teste" in listagem.text
 
-    desativar = await client.post(f"/portal/admin/organizacoes/{nr_org}/toggle-ativo", follow_redirects=False)
+    desativar = await client.post(f"/portal-migration/admin/organizacoes/{nr_org}/toggle-ativo", follow_redirects=False)
     assert desativar.status_code == 303
-    listagem2 = await client.get("/portal/admin/organizacoes")
+    listagem2 = await client.get("/portal-migration/admin/organizacoes")
     assert "Inativa" in listagem2.text
 
 
@@ -77,7 +77,7 @@ async def test_criar_template_e_adicionar_campo_e_script(client: AsyncClient, us
     codigo = f"TESTE_{random.randint(1000, 9999)}"
 
     criar = await client.post(
-        "/portal/admin/templates/novo",
+        "/portal-migration/admin/templates/novo",
         data={
             "codigo": codigo,
             "nome": "Template de Teste",
@@ -90,10 +90,10 @@ async def test_criar_template_e_adicionar_campo_e_script(client: AsyncClient, us
         follow_redirects=False,
     )
     assert criar.status_code == 303
-    assert criar.headers["location"] == f"/portal/admin/templates/{codigo}"
+    assert criar.headers["location"] == f"/portal-migration/admin/templates/{codigo}"
 
     adicionar_campo = await client.post(
-        f"/portal/admin/templates/{codigo}/campos/novo",
+        f"/portal-migration/admin/templates/{codigo}/campos/novo",
         data={
             "ordem": 1,
             "origem": "A",
@@ -108,7 +108,7 @@ async def test_criar_template_e_adicionar_campo_e_script(client: AsyncClient, us
     assert adicionar_campo.status_code == 303
 
     adicionar_script = await client.post(
-        f"/portal/admin/templates/{codigo}/scripts/novo",
+        f"/portal-migration/admin/templates/{codigo}/scripts/novo",
         data={
             "operacao": "INCLUSAO",
             "dialeto_banco": "ORACLE",
@@ -119,7 +119,7 @@ async def test_criar_template_e_adicionar_campo_e_script(client: AsyncClient, us
     )
     assert adicionar_script.status_code == 303
 
-    detalhe = await client.get(f"/portal/admin/templates/{codigo}")
+    detalhe = await client.get(f"/portal-migration/admin/templates/{codigo}")
     assert detalhe.status_code == 200
     assert "Campo Teste" in detalhe.text
     assert "INSERT INTO TABELA_TESTE" in detalhe.text
@@ -133,7 +133,7 @@ async def test_importar_ddl_popula_catalogo_e_alimenta_select_de_colunas(
     nome_tabela = f"TAB_TESTE_{random.randint(100000, 999999)}"
 
     await client.post(
-        "/portal/admin/templates/novo",
+        "/portal-migration/admin/templates/novo",
         data={"codigo": codigo, "nome": "Template DDL", "versao": "1.0", "formatos_aceitos": "XLSX"},
     )
 
@@ -147,19 +147,19 @@ async def test_importar_ddl_popula_catalogo_e_alimenta_select_de_colunas(
     """.encode("utf-8")
 
     importar = await client.post(
-        "/portal/admin/catalogo-destino/importar",
+        "/portal-migration/admin/catalogo-destino/importar",
         files={"arquivo": ("schema.sql", ddl, "text/plain")},
         data={"voltar": codigo},
         follow_redirects=False,
     )
     assert importar.status_code == 303
-    assert importar.headers["location"] == f"/portal/admin/templates/{codigo}"
+    assert importar.headers["location"] == f"/portal-migration/admin/templates/{codigo}"
 
-    detalhe = await client.get(f"/portal/admin/templates/{codigo}")
+    detalhe = await client.get(f"/portal-migration/admin/templates/{codigo}")
     assert detalhe.status_code == 200
     assert "1 tabela(s) e 3 coluna(s) importadas" in detalhe.text
 
-    form_novo_campo = await client.get(f"/portal/admin/templates/{codigo}/campos/novo")
+    form_novo_campo = await client.get(f"/portal-migration/admin/templates/{codigo}/campos/novo")
     assert form_novo_campo.status_code == 200
     assert nome_tabela in form_novo_campo.text
 
@@ -169,7 +169,7 @@ async def test_importar_ddl_popula_catalogo_e_alimenta_select_de_colunas(
     assert m, "opção da tabela recém-importada não encontrada no select"
     tabela_id = m.group(1)
 
-    colunas = await client.get(f"/portal/admin/catalogo-destino/{tabela_id}/colunas")
+    colunas = await client.get(f"/portal-migration/admin/catalogo-destino/{tabela_id}/colunas")
     assert colunas.status_code == 200
     assert "NRCHAVE" in colunas.text
     assert "DSNOME" in colunas.text
@@ -181,13 +181,13 @@ async def test_criar_tipo_migracao_e_adicionar_template_e_dependencia(client: As
     codigo_tipo = f"TIPO_TESTE_{random.randint(1000, 9999)}"
 
     criar_tipo = await client.post(
-        "/portal/admin/tipos-migracao/novo",
+        "/portal-migration/admin/tipos-migracao/novo",
         data={"codigo": codigo_tipo, "nome": "Tipo de Teste", "banco_destino": "ORACLE", "modo_aplicacao": "SCRIPT"},
         follow_redirects=False,
     )
     assert criar_tipo.status_code == 303
 
-    detalhe = await client.get(f"/portal/admin/tipos-migracao/{codigo_tipo}")
+    detalhe = await client.get(f"/portal-migration/admin/tipos-migracao/{codigo_tipo}")
     assert detalhe.status_code == 200
     assert "Tipo de Teste" in detalhe.text
 
@@ -197,10 +197,10 @@ async def test_operador_bloqueado_em_todas_as_telas_admin(client: AsyncClient, u
     await login(client, usuario.email, senha)
 
     for caminho in [
-        "/portal/admin/operadores",
-        "/portal/admin/organizacoes",
-        "/portal/admin/templates",
-        "/portal/admin/tipos-migracao",
+        "/portal-migration/admin/operadores",
+        "/portal-migration/admin/organizacoes",
+        "/portal-migration/admin/templates",
+        "/portal-migration/admin/tipos-migracao",
     ]:
         resposta = await client.get(caminho)
         assert resposta.status_code == 403, f"{caminho} deveria bloquear Operador"

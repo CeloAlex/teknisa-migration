@@ -3,7 +3,7 @@
 {% block conteudo %}
 <div class="card">
   <h2>Filtros</h2>
-  <form method="get" action="/portal/">
+  <form method="get" action="/portal-migration/">
     <div class="grid4">
       <div class="field">
         <label for="status">Status</label>
@@ -40,7 +40,7 @@
       <label for="incluir_concluidas" style="margin:0;">Incluir migrações concluídas/canceladas</label>
     </div>
     <div class="btnbar">
-      <a class="btn secondary" href="/portal/">Limpar filtros</a>
+      <a class="btn secondary" href="/portal-migration/">Limpar filtros</a>
       <button class="btn" type="submit">Filtrar</button>
     </div>
   </form>
@@ -62,13 +62,13 @@
     </div>
     <span class="badge {{ cor }}">{{ rotulo }}</span>
     <div class="dl">
-      <a class="btn small" href="/portal/migracoes/{{ m.id }}">Abrir</a>
+      <a class="btn small" href="/portal-migration/migracoes/{{ m.id }}">Abrir</a>
     </div>
   </div>
   {% endfor %}
 </div>
 
 {% if usuario.papel in ('operador', 'administrador') %}
-<a class="btn" href="/portal/migracoes/nova">+ Nova migração</a>
+<a class="btn" href="/portal-migration/migracoes/nova">+ Nova migração</a>
 {% endif %}
 {% endblock %}

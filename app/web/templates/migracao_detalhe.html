@@ -5,7 +5,7 @@
 {% set cor = status_migracao_meta(migracao.status)[0] %}
 {% set rotulo = status_migracao_meta(migracao.status)[1] %}
 <div class="card">
-  <a href="/portal/">← Voltar ao painel</a>
+  <a href="/portal-migration/">← Voltar ao painel</a>
   <h2>Migração #{{ migracao.id }}</h2>
   <div class="kv">
     <span><b>Tipo:</b> {{ migracao.tipo_migracao.nome }}</span>
@@ -23,11 +23,11 @@
   {% endif %}
   {% if usuario.papel == 'administrador' and migracao.status not in ['concluida', 'concluida_com_alertas', 'cancelada', 'revertida'] %}
   <div class="btnbar">
-    <form class="inline" method="post" action="/portal/migracoes/{{ migracao.id }}/cancelar">
+    <form class="inline" method="post" action="/portal-migration/migracoes/{{ migracao.id }}/cancelar">
       <button class="btn danger small" type="submit">Cancelar migração</button>
     </form>
     {% if migracao.status == 'com_erro' %}
-    <form class="inline" method="post" action="/portal/migracoes/{{ migracao.id }}/reverter">
+    <form class="inline" method="post" action="/portal-migration/migracoes/{{ migracao.id }}/reverter">
       <button class="btn secondary small" type="submit">Confirmar rollback (reverter)</button>
     </form>
     {% endif %}
@@ -39,7 +39,7 @@
 
 <div class="tabs">
   {% for codigo, rotulo_aba in abas %}
-  <a class="tab{% if aba == codigo %} active{% endif %}" href="/portal/migracoes/{{ migracao.id }}?aba={{ codigo }}">{{ rotulo_aba }}</a>
+  <a class="tab{% if aba == codigo %} active{% endif %}" href="/portal-migration/migracoes/{{ migracao.id }}?aba={{ codigo }}">{{ rotulo_aba }}</a>
   {% endfor %}
 </div>
 

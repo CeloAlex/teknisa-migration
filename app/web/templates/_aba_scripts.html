@@ -11,7 +11,7 @@
   {% elif not mts.dados_aprovados %}
     <div class="banner block">Aprove os dados deste template antes de gerar o script.</div>
   {% elif usuario.papel in ('operador', 'aprovador_funcional', 'administrador') %}
-    <form method="post" action="/portal/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/gerar-script">
+    <form method="post" action="/portal-migration/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/gerar-script">
       <div class="field" style="max-width:220px;">
         <label for="operacao-{{ mts.template.codigo }}">Operação</label>
         <select id="operacao-{{ mts.template.codigo }}" name="operacao">

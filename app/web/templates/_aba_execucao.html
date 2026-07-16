@@ -25,11 +25,11 @@
       {% elif not mts.script_aprovado %}
         <span class="badge gray">Aguardando aprovação técnica</span>
       {% elif usuario.papel in ('executor_dba', 'administrador') %}
-        <form class="inline" method="post" action="/portal/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/aplicar">
+        <form class="inline" method="post" action="/portal-migration/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/aplicar">
           <input type="hidden" name="sucesso" value="true">
           <button class="btn success small" type="submit">Aplicar</button>
         </form>
-        <form class="inline" method="post" action="/portal/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/aplicar" style="display:flex; gap:4px; align-items:center;">
+        <form class="inline" method="post" action="/portal-migration/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/aplicar" style="display:flex; gap:4px; align-items:center;">
           <input type="hidden" name="sucesso" value="false">
           <input type="text" name="detalhe_erro" placeholder="detalhe do erro" style="width:160px;">
           <button class="btn danger small" type="submit">Registrar falha</button>

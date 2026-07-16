@@ -13,7 +13,7 @@
       {% include "_template_progress.html" %}
     {% elif usuario.papel in ('operador', 'administrador') %}
       {% set eh_xml = 'XML' in mts.template.formatos_aceitos %}
-      <form method="post" action="/portal/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/arquivo" enctype="multipart/form-data" class="tpl-inline-block">
+      <form method="post" action="/portal-migration/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/arquivo" enctype="multipart/form-data" class="tpl-inline-block">
         <div class="dropzone" data-input="arquivo-{{ mts.template.codigo }}">
           <span data-rotulo>Arraste o arquivo {{ '.xml' if eh_xml else '.xlsx' }} aqui ou clique para selecionar</span>
         </div>

@@ -2,7 +2,7 @@
 {% block titulo %}{{ template.nome }}{% endblock %}
 {% block conteudo %}
 <div class="card">
-  <a href="/portal/admin/templates">← Voltar</a>
+  <a href="/portal-migration/admin/templates">← Voltar</a>
   <h2>{{ template.nome }} <span class="mono">({{ template.codigo }})</span></h2>
   <div class="kv">
     <span><b>Versão:</b> {{ template.versao }}</span>
@@ -36,8 +36,8 @@
           <td>{{ c.regra_conversao or "—" }}</td>
           <td>{% if c.eh_pk %}<span class="badge purple">PK</span>{% endif %}{% if c.gerador_pk %}<span class="badge teal">Gerador PK</span>{% endif %}</td>
           <td class="table-actions">
-            <a class="btn small secondary" href="/portal/admin/templates/{{ template.codigo }}/campos/{{ c.id }}/editar">Editar</a>
-            <form class="inline" method="post" action="/portal/admin/templates/{{ template.codigo }}/campos/{{ c.id }}/excluir" onsubmit="return confirm('Excluir este campo do dicionário?');">
+            <a class="btn small secondary" href="/portal-migration/admin/templates/{{ template.codigo }}/campos/{{ c.id }}/editar">Editar</a>
+            <form class="inline" method="post" action="/portal-migration/admin/templates/{{ template.codigo }}/campos/{{ c.id }}/excluir" onsubmit="return confirm('Excluir este campo do dicionário?');">
               <button class="btn small danger" type="submit">Excluir</button>
             </form>
           </td>
@@ -47,8 +47,8 @@
     </table>
   </div>
   <div class="btnbar">
-    <a class="btn small" href="/portal/admin/templates/{{ template.codigo }}/campos/novo">+ Adicionar campo ao dicionário</a>
-    <form class="inline" method="post" action="/portal/admin/catalogo-destino/importar" enctype="multipart/form-data">
+    <a class="btn small" href="/portal-migration/admin/templates/{{ template.codigo }}/campos/novo">+ Adicionar campo ao dicionário</a>
+    <form class="inline" method="post" action="/portal-migration/admin/catalogo-destino/importar" enctype="multipart/form-data">
       <input type="hidden" name="voltar" value="{{ template.codigo }}">
       <input type="file" name="arquivo" required accept=".sql,.txt" style="max-width:220px;">
       <button class="btn small secondary" type="submit">Importar DDL Oracle</button>
@@ -67,15 +67,15 @@
     </div>
     <div class="codebox">{{ s.template_sql[:2000] }}</div>
     <div class="table-actions" style="margin-top:8px;">
-      <a class="btn small secondary" href="/portal/admin/templates/{{ template.codigo }}/scripts/{{ s.id }}/editar">Editar</a>
-      <form class="inline" method="post" action="/portal/admin/templates/{{ template.codigo }}/scripts/{{ s.id }}/excluir" onsubmit="return confirm('Excluir este bloco de script?');">
+      <a class="btn small secondary" href="/portal-migration/admin/templates/{{ template.codigo }}/scripts/{{ s.id }}/editar">Editar</a>
+      <form class="inline" method="post" action="/portal-migration/admin/templates/{{ template.codigo }}/scripts/{{ s.id }}/excluir" onsubmit="return confirm('Excluir este bloco de script?');">
         <button class="btn small danger" type="submit">Excluir</button>
       </form>
     </div>
   </div>
   {% endfor %}
   <div class="btnbar">
-    <a class="btn small" href="/portal/admin/templates/{{ template.codigo }}/scripts/novo">+ Adicionar bloco de script</a>
+    <a class="btn small" href="/portal-migration/admin/templates/{{ template.codigo }}/scripts/novo">+ Adicionar bloco de script</a>
   </div>
 </div>
 {% endblock %}

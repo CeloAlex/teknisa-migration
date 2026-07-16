@@ -34,7 +34,7 @@ async def test_fluxo_completo_pelas_8_abas_do_portal(client: AsyncClient, usuari
     await login(client, usuario.email, senha)
 
     criar = await client.post(
-        "/portal/migracoes/nova",
+        "/portal-migration/migracoes/nova",
         data={"nr_org": nr_org_teste, "tipo_migracao_codigo": TIPO_AGENCIAS},
         follow_redirects=False,
     )
@@ -56,7 +56,7 @@ async def test_fluxo_completo_pelas_8_abas_do_portal(client: AsyncClient, usuari
         assert resposta.status_code == 200, f"aba {aba} falhou: {resposta.text[:300]}"
 
     upload = await client.post(
-        f"/portal/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/arquivo",
+        f"/portal-migration/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/arquivo",
         files={
             "arquivo": (
                 "agencias.xlsx",
@@ -77,14 +77,14 @@ async def test_fluxo_completo_pelas_8_abas_do_portal(client: AsyncClient, usuari
         raise AssertionError("Processamento não concluiu a tempo")
 
     aprovar_dados = await client.post(
-        f"/portal/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aprovar-dados", follow_redirects=False
+        f"/portal-migration/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aprovar-dados", follow_redirects=False
     )
     assert aprovar_dados.status_code == 303
     tab_aprovacao = await client.get(migracao_url, params={"aba": "aprovacao_dados"})
     assert "Dados aprovados por" in tab_aprovacao.text
 
     gerar_script = await client.post(
-        f"/portal/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/gerar-script",
+        f"/portal-migration/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/gerar-script",
         data={"operacao": "INCLUSAO"},
         follow_redirects=False,
     )
@@ -93,14 +93,14 @@ async def test_fluxo_completo_pelas_8_abas_do_portal(client: AsyncClient, usuari
     assert "codebox" in tab_scripts.text
 
     aprovar_script = await client.post(
-        f"/portal/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aprovar-script", follow_redirects=False
+        f"/portal-migration/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aprovar-script", follow_redirects=False
     )
     assert aprovar_script.status_code == 303
     tab_tecnica = await client.get(migracao_url, params={"aba": "aprovacao_tecnica"})
     assert "aprovado tecnicamente por" in tab_tecnica.text
 
     aplicar = await client.post(
-        f"/portal/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aplicar",
+        f"/portal-migration/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aplicar",
         data={"sucesso": "true"},
         follow_redirects=False,
     )
@@ -121,12 +121,12 @@ async def test_usuario_de_outra_organizacao_nao_acessa_migracao(
     admin, senha_admin = await usuario_teste(Papel.ADMINISTRADOR.value)
     await login(client, admin.email, senha_admin)
     criar = await client.post(
-        "/portal/migracoes/nova",
+        "/portal-migration/migracoes/nova",
         data={"nr_org": nr_org_teste, "tipo_migracao_codigo": TIPO_AGENCIAS},
         follow_redirects=False,
     )
     migracao_url = criar.headers["location"]
-    await client.post("/portal/logout")
+    await client.post("/portal-migration/logout")
 
     outro_nr_org = random.randint(10_000_000, 99_999_999)
     async with AsyncSessionLocal() as session:
