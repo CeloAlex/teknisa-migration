@@ -3,6 +3,7 @@ from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+import app.models.catalogo_destino  # noqa: F401 — registra CatalogoColuna para a FK abaixo
 
 
 class Template(Base):
@@ -59,6 +60,14 @@ class TemplateCampo(Base):
     marcador: Mapped[str | None] = mapped_column(String(100))
     destino_tabela: Mapped[str] = mapped_column(String(100))
     destino_coluna: Mapped[str] = mapped_column(String(100))
+    # Opcional: quando o operador escolhe tabela/coluna a partir do catálogo importado de
+    # DDL (em vez de digitar destino_tabela/destino_coluna à mão), a escolha também fica
+    # registrada aqui como FK real. Nullable de propósito — os ~24 templates seedados antes
+    # da existência do catálogo continuam com isto NULL e seguem funcionando normalmente
+    # pelo texto livre (nunca lido pelo motor, só exibido).
+    destino_coluna_catalogo_id: Mapped[int | None] = mapped_column(
+        ForeignKey("catalogo_destino_coluna.id"), nullable=True
+    )
     tipo: Mapped[str] = mapped_column(String(20))
     tamanho_maximo: Mapped[int | None] = mapped_column(Integer)
     obrigatorio: Mapped[bool] = mapped_column(Boolean, default=False)

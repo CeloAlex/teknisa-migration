@@ -26,11 +26,26 @@
         <input type="text" id="marcador" name="marcador" value="{{ campo.marcador if campo else '' }}">
       </div>
       <div class="field">
-        <label for="destino_tabela">Tabela destino</label>
+        <label for="catalogo_tabela">Tabela destino (catálogo importado)</label>
+        <select id="catalogo_tabela" onchange="onSelecionarCatalogoTabela(this)">
+          <option value="">— texto livre (abaixo) —</option>
+          {% for t in (catalogo_tabelas or []) %}
+          <option value="{{ t.id }}" {% if campo and campo.destino_coluna_catalogo_id and campo.destino_tabela == t.nome_tabela %}selected{% endif %}>{{ t.nome_tabela }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="catalogo_coluna">Coluna destino (catálogo importado)</label>
+        <select id="catalogo_coluna" name="destino_coluna_catalogo_id" onchange="onSelecionarCatalogoColuna(this)">
+          <option value="">— escolha a tabela acima —</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="destino_tabela">Tabela destino (texto livre — usado quando não há entrada no catálogo)</label>
         <input type="text" id="destino_tabela" name="destino_tabela" value="{{ campo.destino_tabela if campo else '' }}" required>
       </div>
       <div class="field">
-        <label for="destino_coluna">Coluna destino</label>
+        <label for="destino_coluna">Coluna destino (texto livre)</label>
         <input type="text" id="destino_coluna" name="destino_coluna" value="{{ campo.destino_coluna if campo else '' }}" required>
       </div>
       <div class="field">
@@ -80,4 +95,24 @@
     </div>
   </form>
 </div>
+<script>
+async function onSelecionarCatalogoTabela(select) {
+  var colunaSelect = document.getElementById('catalogo_coluna');
+  if (!select.value) {
+    colunaSelect.innerHTML = '<option value="">— escolha a tabela acima —</option>';
+    return;
+  }
+  document.getElementById('destino_tabela').value = select.options[select.selectedIndex].text;
+  colunaSelect.innerHTML = '<option value="">— carregando —</option>';
+  const resposta = await fetch('/portal/admin/catalogo-destino/' + select.value + '/colunas');
+  colunaSelect.innerHTML = await resposta.text();
+}
+
+function onSelecionarCatalogoColuna(select) {
+  var opcao = select.options[select.selectedIndex];
+  if (opcao && opcao.dataset.nome) {
+    document.getElementById('destino_coluna').value = opcao.dataset.nome;
+  }
+}
+</script>
 {% endblock %}

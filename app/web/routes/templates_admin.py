@@ -1,16 +1,23 @@
-from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends, Form, Request, UploadFile
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.db.session import get_db
+from app.metadata.ddl_import import parse_ddl_oracle
+from app.models.catalogo_destino import CatalogoColuna, CatalogoTabela
 from app.models.template import Template, TemplateCampo, TemplateScript
 from app.models.usuario import Papel, Usuario
 from app.web.deps import exigir_papel
 from app.web.templates_env import templates
 
 router = APIRouter(prefix="/portal/admin/templates", tags=["portal-admin-templates"])
+router_catalogo = APIRouter(prefix="/portal/admin/catalogo-destino", tags=["portal-admin-catalogo-destino"])
+
+
+def _flash_catalogo(request: Request, mensagem: str, tipo: str = "ok") -> None:
+    request.session["_flash_catalogo"] = {"tipo": tipo, "mensagem": mensagem}
 
 
 async def _carregar_template(db: AsyncSession, codigo: str) -> Template | None:
@@ -84,7 +91,17 @@ async def detalhe(
     db: AsyncSession = Depends(get_db),
 ):
     template = await _carregar_template(db, codigo)
-    return templates.TemplateResponse(request, "templates_admin/detalhe.html", {"usuario": usuario, "template": template})
+    catalogo_tabelas = (await db.execute(select(CatalogoTabela).order_by(CatalogoTabela.nome_tabela))).scalars().all()
+    return templates.TemplateResponse(
+        request,
+        "templates_admin/detalhe.html",
+        {
+            "usuario": usuario,
+            "template": template,
+            "catalogo_tabelas": catalogo_tabelas,
+            "flash_catalogo": request.session.pop("_flash_catalogo", None),
+        },
+    )
 
 
 # --- campos do dicionário de dados -----------------------------------------------------------
@@ -92,10 +109,16 @@ async def detalhe(
 
 @router.get("/{codigo}/campos/novo")
 async def form_novo_campo(
-    request: Request, codigo: str, usuario: Usuario = Depends(exigir_papel(Papel.ADMINISTRADOR))
+    request: Request,
+    codigo: str,
+    usuario: Usuario = Depends(exigir_papel(Papel.ADMINISTRADOR)),
+    db: AsyncSession = Depends(get_db),
 ):
+    catalogo_tabelas = (await db.execute(select(CatalogoTabela).order_by(CatalogoTabela.nome_tabela))).scalars().all()
     return templates.TemplateResponse(
-        request, "templates_admin/campo_form.html", {"usuario": usuario, "codigo": codigo, "campo": None}
+        request,
+        "templates_admin/campo_form.html",
+        {"usuario": usuario, "codigo": codigo, "campo": None, "catalogo_tabelas": catalogo_tabelas},
     )
 
 
@@ -109,6 +132,7 @@ async def criar_campo(
     marcador: str = Form(""),
     destino_tabela: str = Form(...),
     destino_coluna: str = Form(...),
+    destino_coluna_catalogo_id: int | None = Form(None),
     tipo: str = Form(...),
     tamanho_maximo: int | None = Form(None),
     obrigatorio: bool = Form(False),
@@ -133,6 +157,7 @@ async def criar_campo(
             marcador=marcador or None,
             destino_tabela=destino_tabela,
             destino_coluna=destino_coluna,
+            destino_coluna_catalogo_id=destino_coluna_catalogo_id,
             tipo=tipo,
             tamanho_maximo=tamanho_maximo,
             obrigatorio=obrigatorio,
@@ -157,8 +182,11 @@ async def form_editar_campo(
     db: AsyncSession = Depends(get_db),
 ):
     campo = await db.get(TemplateCampo, campo_id)
+    catalogo_tabelas = (await db.execute(select(CatalogoTabela).order_by(CatalogoTabela.nome_tabela))).scalars().all()
     return templates.TemplateResponse(
-        request, "templates_admin/campo_form.html", {"usuario": usuario, "codigo": codigo, "campo": campo}
+        request,
+        "templates_admin/campo_form.html",
+        {"usuario": usuario, "codigo": codigo, "campo": campo, "catalogo_tabelas": catalogo_tabelas},
     )
 
 
@@ -173,6 +201,7 @@ async def editar_campo(
     marcador: str = Form(""),
     destino_tabela: str = Form(...),
     destino_coluna: str = Form(...),
+    destino_coluna_catalogo_id: int | None = Form(None),
     tipo: str = Form(...),
     tamanho_maximo: int | None = Form(None),
     obrigatorio: bool = Form(False),
@@ -194,6 +223,7 @@ async def editar_campo(
     alvo.marcador = marcador or None
     alvo.destino_tabela = destino_tabela
     alvo.destino_coluna = destino_coluna
+    alvo.destino_coluna_catalogo_id = destino_coluna_catalogo_id
     alvo.tipo = tipo
     alvo.tamanho_maximo = tamanho_maximo
     alvo.obrigatorio = obrigatorio
@@ -307,3 +337,83 @@ async def excluir_script(
     if alvo is not None:
         await db.delete(alvo)
     return RedirectResponse(url=f"/portal/admin/templates/{codigo}", status_code=303)
+
+
+# --- catálogo de destino (importador de DDL Oracle) -----------------------------------------
+
+
+@router_catalogo.post("/importar")
+async def importar_ddl(
+    request: Request,
+    arquivo: UploadFile,
+    voltar: str = Form(""),
+    usuario: Usuario = Depends(exigir_papel(Papel.ADMINISTRADOR)),
+    db: AsyncSession = Depends(get_db),
+):
+    conteudo_bruto = await arquivo.read()
+    try:
+        conteudo = conteudo_bruto.decode("utf-8")
+    except UnicodeDecodeError:
+        conteudo = conteudo_bruto.decode("latin-1")
+
+    tabelas_importadas = parse_ddl_oracle(conteudo)
+    if not tabelas_importadas:
+        _flash_catalogo(request, "Nenhum CREATE TABLE encontrado no arquivo enviado.", tipo="block")
+    else:
+        nr_tabelas = 0
+        nr_colunas = 0
+        for tabela_ddl in tabelas_importadas:
+            tabela = (
+                await db.execute(select(CatalogoTabela).where(CatalogoTabela.nome_tabela == tabela_ddl.nome_tabela))
+            ).scalar_one_or_none()
+            if tabela is None:
+                tabela = CatalogoTabela(nome_tabela=tabela_ddl.nome_tabela)
+                db.add(tabela)
+                await db.flush()
+            nr_tabelas += 1
+
+            colunas_existentes = {
+                c.nome_coluna: c
+                for c in (
+                    await db.execute(select(CatalogoColuna).where(CatalogoColuna.tabela_id == tabela.id))
+                ).scalars()
+            }
+            for coluna_ddl in tabela_ddl.colunas:
+                coluna = colunas_existentes.get(coluna_ddl.nome_coluna)
+                if coluna is None:
+                    db.add(
+                        CatalogoColuna(
+                            tabela_id=tabela.id,
+                            nome_coluna=coluna_ddl.nome_coluna,
+                            tipo_dado=coluna_ddl.tipo_dado,
+                            obrigatoria=coluna_ddl.obrigatoria,
+                        )
+                    )
+                else:
+                    coluna.tipo_dado = coluna_ddl.tipo_dado
+                    coluna.obrigatoria = coluna_ddl.obrigatoria
+                nr_colunas += 1
+
+        _flash_catalogo(request, f"{nr_tabelas} tabela(s) e {nr_colunas} coluna(s) importadas do DDL.")
+
+    if voltar:
+        return RedirectResponse(url=f"/portal/admin/templates/{voltar}", status_code=303)
+    return RedirectResponse(url="/portal/admin/templates", status_code=303)
+
+
+@router_catalogo.get("/{tabela_id}/colunas", response_class=HTMLResponse)
+async def colunas_da_tabela(
+    tabela_id: int,
+    usuario: Usuario = Depends(exigir_papel(Papel.ADMINISTRADOR)),
+    db: AsyncSession = Depends(get_db),
+):
+    """Fragmento HTML (`<option>`s) para popular o select de coluna via htmx, em cascata a
+    partir do select de tabela — mesmo padrão server-rendered do resto do portal."""
+    colunas = (
+        await db.execute(select(CatalogoColuna).where(CatalogoColuna.tabela_id == tabela_id).order_by(CatalogoColuna.nome_coluna))
+    ).scalars().all()
+    opcoes = ['<option value="">— selecione —</option>']
+    for c in colunas:
+        rotulo = c.nome_coluna + (f" ({c.tipo_dado})" if c.tipo_dado else "")
+        opcoes.append(f'<option value="{c.id}" data-nome="{c.nome_coluna}">{rotulo}</option>')
+    return HTMLResponse("".join(opcoes))

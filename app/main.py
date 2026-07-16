@@ -37,6 +37,7 @@ def create_app() -> FastAPI:
     app.include_router(web_operadores.router)
     app.include_router(web_organizacoes.router)
     app.include_router(web_templates_admin.router)
+    app.include_router(web_templates_admin.router_catalogo)
     app.include_router(web_tipos_migracao_admin.router)
     app.mount("/portal/static", StaticFiles(directory=str(WEB_BASE_DIR / "static")), name="portal-static")
 

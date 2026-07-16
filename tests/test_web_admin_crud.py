@@ -125,6 +125,57 @@ async def test_criar_template_e_adicionar_campo_e_script(client: AsyncClient, us
     assert "INSERT INTO TABELA_TESTE" in detalhe.text
 
 
+async def test_importar_ddl_popula_catalogo_e_alimenta_select_de_colunas(
+    client: AsyncClient, usuario_teste
+) -> None:
+    await _login_admin(client, usuario_teste)
+    codigo = f"TESTE_{random.randint(1000, 9999)}"
+    nome_tabela = f"TAB_TESTE_{random.randint(100000, 999999)}"
+
+    await client.post(
+        "/portal/admin/templates/novo",
+        data={"codigo": codigo, "nome": "Template DDL", "versao": "1.0", "formatos_aceitos": "XLSX"},
+    )
+
+    ddl = f"""
+      CREATE TABLE "FOLHA"."{nome_tabela}"
+       (	"NRORG" NUMBER DEFAULT 1,
+	"NRCHAVE" NUMBER,
+	"DSNOME" VARCHAR2(60 BYTE)
+       ) SEGMENT CREATION IMMEDIATE TABLESPACE "FOLHA" ;
+      ALTER TABLE "FOLHA"."{nome_tabela}" MODIFY ("NRCHAVE" NOT NULL ENABLE);
+    """.encode("utf-8")
+
+    importar = await client.post(
+        "/portal/admin/catalogo-destino/importar",
+        files={"arquivo": ("schema.sql", ddl, "text/plain")},
+        data={"voltar": codigo},
+        follow_redirects=False,
+    )
+    assert importar.status_code == 303
+    assert importar.headers["location"] == f"/portal/admin/templates/{codigo}"
+
+    detalhe = await client.get(f"/portal/admin/templates/{codigo}")
+    assert detalhe.status_code == 200
+    assert "1 tabela(s) e 3 coluna(s) importadas" in detalhe.text
+
+    form_novo_campo = await client.get(f"/portal/admin/templates/{codigo}/campos/novo")
+    assert form_novo_campo.status_code == 200
+    assert nome_tabela in form_novo_campo.text
+
+    import re
+
+    m = re.search(rf'<option value="(\d+)"[^>]*>{nome_tabela}</option>', form_novo_campo.text)
+    assert m, "opção da tabela recém-importada não encontrada no select"
+    tabela_id = m.group(1)
+
+    colunas = await client.get(f"/portal/admin/catalogo-destino/{tabela_id}/colunas")
+    assert colunas.status_code == 200
+    assert "NRCHAVE" in colunas.text
+    assert "DSNOME" in colunas.text
+    assert "NRORG" in colunas.text
+
+
 async def test_criar_tipo_migracao_e_adicionar_template_e_dependencia(client: AsyncClient, usuario_teste) -> None:
     await _login_admin(client, usuario_teste)
     codigo_tipo = f"TIPO_TESTE_{random.randint(1000, 9999)}"
