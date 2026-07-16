@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -79,3 +81,80 @@ class TipoMigracaoResponse(BaseModel):
     sequencia_obrigatoria: bool
     permite_concorrencia: bool
     templates: list[TipoMigracaoTemplateResponse]
+
+
+# --- Fase 5: máquina de estados da migração ---------------------------------------------
+
+
+class MigracaoCriarRequest(BaseModel):
+    nr_org: int
+    tipo_migracao_codigo: str
+    operador: str
+
+
+class MigracaoTemplateStatusResponse(BaseModel):
+    template_codigo: str
+    template_nome: str
+    obrigatorio: bool
+    status: str
+    total_linhas: int
+    linhas_processadas: int
+    pausado: bool
+    teve_alerta: bool
+    dados_aprovados: bool
+    script_gerado: bool
+    script_aprovado: bool
+    aplicado: bool
+    aplicado_com_erro: bool
+
+
+class MigracaoEventoResponse(BaseModel):
+    evento: str
+    usuario: str
+    dt_evento: datetime
+
+
+class MigracaoResponse(BaseModel):
+    id: int
+    nr_org: int
+    organizacao_nome: str
+    tipo_migracao_codigo: str
+    operador: str
+    status: str
+    dt_criacao: datetime
+    dt_conclusao: datetime | None
+    templates: list[MigracaoTemplateStatusResponse]
+
+
+class MigracaoDetalheResponse(MigracaoResponse):
+    eventos: list[MigracaoEventoResponse]
+
+
+class MigracaoListItemResponse(BaseModel):
+    id: int
+    nr_org: int
+    organizacao_nome: str
+    tipo_migracao_codigo: str
+    operador: str
+    status: str
+    dt_criacao: datetime
+
+
+class ValidacaoPersistidaResponse(BaseModel):
+    linha: int
+    campo: str
+    regra: str
+    classificacao: str
+    valor_recebido: str
+    valor_esperado: str
+    orientacao: str
+
+
+class AcaoComUsuarioRequest(BaseModel):
+    usuario: str
+
+
+class AplicarRequest(BaseModel):
+    usuario: str
+    sucesso: bool = True
+    detalhe_erro: str | None = None

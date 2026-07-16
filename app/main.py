@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.api.routes import health, templates, tipos_migracao
+from app.api.routes import health, migracoes, templates, tipos_migracao
 
 
 def create_app() -> FastAPI:
@@ -12,6 +12,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router, tags=["health"])
     app.include_router(templates.router)
     app.include_router(tipos_migracao.router)
+    app.include_router(migracoes.router)
     return app
 
 

@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     oracle_user: str | None = None
     oracle_password: str | None = None
 
+    # Processamento em lote (Fase 5): tamanho padrão de cada chunk de transformação —
+    # arquivos grandes (Escala de Trabalho real tem 3.587 linhas) são fatiados
+    # automaticamente, nunca pelo operador. Pode ser sobrescrito por requisição de upload.
+    tamanho_lote_processamento: int = 250
+
 
 @lru_cache
 def get_settings() -> Settings:
