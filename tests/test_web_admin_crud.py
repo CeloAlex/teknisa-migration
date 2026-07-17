@@ -21,6 +21,22 @@ async def _apagar_organizacao(nr_org: int) -> None:
         await session.commit()
 
 
+async def _apagar_template(codigo: str) -> None:
+    """Os testes de admin de template criam pela tela (não por uma migração Alembic), então
+    precisam apagar por conta própria ao final — mesmo motivo do `_apagar_organizacao`.
+    Ordem de FK: template_campo/template_script antes de template."""
+    async with AsyncSessionLocal() as session:
+        template_id = (
+            await session.execute(text("SELECT id FROM template WHERE codigo = :codigo"), {"codigo": codigo})
+        ).scalar_one_or_none()
+        if template_id is None:
+            return
+        await session.execute(text("DELETE FROM template_campo WHERE template_id = :id"), {"id": template_id})
+        await session.execute(text("DELETE FROM template_script WHERE template_id = :id"), {"id": template_id})
+        await session.execute(text("DELETE FROM template WHERE id = :id"), {"id": template_id})
+        await session.commit()
+
+
 async def test_criar_e_listar_operador(client: AsyncClient, usuario_teste, nr_org_teste: int) -> None:
     await _login_admin(client, usuario_teste)
     email = f"novo{random.randint(1000, 9999)}@example.com"
@@ -136,6 +152,8 @@ async def test_criar_template_e_adicionar_campo_e_script(client: AsyncClient, us
     assert "Campo Teste" in detalhe.text
     assert "INSERT INTO TABELA_TESTE" in detalhe.text
 
+    await _apagar_template(codigo)
+
 
 async def test_importar_ddl_popula_catalogo_e_alimenta_select_de_colunas(
     client: AsyncClient, usuario_teste
@@ -186,6 +204,12 @@ async def test_importar_ddl_popula_catalogo_e_alimenta_select_de_colunas(
     assert "NRCHAVE" in colunas.text
     assert "DSNOME" in colunas.text
     assert "NRORG" in colunas.text
+
+    await _apagar_template(codigo)
+    async with AsyncSessionLocal() as session:
+        await session.execute(text("DELETE FROM catalogo_destino_coluna WHERE tabela_id = :id"), {"id": int(tabela_id)})
+        await session.execute(text("DELETE FROM catalogo_destino_tabela WHERE id = :id"), {"id": int(tabela_id)})
+        await session.commit()
 
 
 async def test_criar_tipo_migracao_e_adicionar_template_e_dependencia(client: AsyncClient, usuario_teste) -> None:
