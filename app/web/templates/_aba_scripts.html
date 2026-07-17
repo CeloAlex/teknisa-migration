@@ -4,7 +4,7 @@
   {% set script = scripts.get(mts.template.codigo) %}
   {% if script %}
     <div class="badge blue">{{ script.operacao }}</div>
-    <div class="codebox">{{ script.conteudo_sql[:3000] }}</div>
+    <div class="codebox">{{ script.conteudo_sql[:3000] | sql_legivel }}</div>
     <div class="btnbar">
       <a class="btn small secondary" href="/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/script">Baixar .sql</a>
     </div>

@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 from fastapi.templating import Jinja2Templates
@@ -72,9 +73,23 @@ def formatar_data(valor) -> str:
     return valor.strftime("%d/%m/%Y %H:%M")
 
 
+_RE_FIM_INSTRUCAO = re.compile(r"(\);)\s+(?=[A-Z])")
+
+
+def sql_legivel(template_sql: str) -> str:
+    """Só para exibição no preview de admin (Seção 6.2) — um `TemplateScript.template_sql`
+    pode conter mais de uma instrução (ex.: INSERT em GPE_ESCALATRABM seguido de INSERT em
+    GPE_ESCALATRABH, separados só por `); `). Sem quebra de linha, blocos com 2-3 instruções
+    parecem ter só a primeira dentro da caixa de preview de altura fixa — quebra cada `);`
+    de fechamento em uma linha nova, sem alterar o texto armazenado usado de fato na geração
+    do script real."""
+    return _RE_FIM_INSTRUCAO.sub(r"\1\n", template_sql)
+
+
 templates.env.globals["status_migracao_meta"] = status_migracao_meta
 templates.env.globals["status_template_meta"] = status_template_meta
 templates.env.globals["severidade_meta"] = severidade_meta
 templates.env.globals["papel_rotulo"] = papel_rotulo
 templates.env.globals["papel_opcoes"] = list(PAPEL_META.items())
 templates.env.filters["data_br"] = formatar_data
+templates.env.filters["sql_legivel"] = sql_legivel

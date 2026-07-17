@@ -8,7 +8,7 @@
   {% elif mts.script_aprovado %}
     <div class="banner ok">Script aprovado tecnicamente por {{ mts.aprovado_script_por }}.</div>
   {% elif usuario.papel in ('aprovador_tecnico', 'administrador') %}
-    <div class="codebox">{{ script.conteudo_sql[:3000] }}</div>
+    <div class="codebox">{{ script.conteudo_sql[:3000] | sql_legivel }}</div>
     <form method="post" action="/portal-migration/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/aprovar-script">
       <div class="checkline">
         <input type="checkbox" id="rev1-{{ mts.template.codigo }}" required>
