@@ -21,6 +21,14 @@ async def _apagar_organizacao(nr_org: int) -> None:
         await session.commit()
 
 
+async def _apagar_tipo_migracao(codigo: str) -> None:
+    """Este teste cria o tipo de migração pela tela de admin, então precisa apagar por
+    conta própria ao final — mesmo motivo do `_apagar_organizacao`/`_apagar_template`."""
+    async with AsyncSessionLocal() as session:
+        await session.execute(text("DELETE FROM tipo_migracao WHERE codigo = :codigo"), {"codigo": codigo})
+        await session.commit()
+
+
 async def _apagar_template(codigo: str) -> None:
     """Os testes de admin de template criam pela tela (não por uma migração Alembic), então
     precisam apagar por conta própria ao final — mesmo motivo do `_apagar_organizacao`.
@@ -226,6 +234,8 @@ async def test_criar_tipo_migracao_e_adicionar_template_e_dependencia(client: As
     detalhe = await client.get(f"/portal-migration/admin/tipos-migracao/{codigo_tipo}")
     assert detalhe.status_code == 200
     assert "Tipo de Teste" in detalhe.text
+
+    await _apagar_tipo_migracao(codigo_tipo)
 
 
 async def test_operador_bloqueado_em_todas_as_telas_admin(client: AsyncClient, usuario_teste, nr_org_teste: int) -> None:
