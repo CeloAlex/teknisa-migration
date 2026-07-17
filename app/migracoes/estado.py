@@ -27,7 +27,13 @@ def recalcular_status(status_atual: str, templates: list[ResumoTemplate]) -> Mig
 
     obrigatorios = [t for t in templates if t.obrigatorio]
     if not obrigatorios:
-        return MigracaoStatus.AGUARDANDO_ARQUIVOS
+        # Tipo de migração sem nenhum template obrigatório (ex.: pacote de eventos eSocial,
+        # onde o operador escolhe livremente quais processar) — cai para os templates que
+        # já foram tocados (status != PENDENTE); os nunca tocados são ignorados, mesmo
+        # critério já usado para templates não-obrigatórios quando existe um obrigatório.
+        obrigatorios = [t for t in templates if t.status != TemplateStatus.PENDENTE.value]
+        if not obrigatorios:
+            return MigracaoStatus.AGUARDANDO_ARQUIVOS
 
     if all(t.status == TemplateStatus.PENDENTE.value for t in obrigatorios):
         return MigracaoStatus.AGUARDANDO_ARQUIVOS

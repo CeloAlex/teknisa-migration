@@ -2,12 +2,16 @@ import asyncio
 
 from httpx import AsyncClient
 
-TIPO_S1030 = "MIG_ESOCIAL_S1030"
-TIPO_S1200 = "MIG_ESOCIAL_S1200"
-TIPO_S2230 = "MIG_ESOCIAL_S2230"
-TIPO_S2200 = "MIG_ESOCIAL_S2200"
-TIPO_S2205 = "MIG_ESOCIAL_S2205"
-TIPO_S2206 = "MIG_ESOCIAL_S2206"
+# Os 11 templates eSocial foram consolidados num único tipo de migração (Alembic
+# 6df3d7f10a14) — cada evento vira um template opcional dentro dele, em vez de um tipo à
+# parte por evento; o operador escolhe livremente qual(is) processar numa mesma migração.
+TIPO_ESOCIAL = "MIG_ESOCIAL"
+TIPO_S1030 = TIPO_ESOCIAL
+TIPO_S1200 = TIPO_ESOCIAL
+TIPO_S2230 = TIPO_ESOCIAL
+TIPO_S2200 = TIPO_ESOCIAL
+TIPO_S2205 = TIPO_ESOCIAL
+TIPO_S2206 = TIPO_ESOCIAL
 
 
 def _xml_s1030(cod_cargo: str = "123") -> bytes:

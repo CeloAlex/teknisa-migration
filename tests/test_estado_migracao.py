@@ -105,3 +105,52 @@ def test_templates_nao_obrigatorios_sao_ignorados_no_calculo() -> None:
 def test_estado_terminal_nunca_e_recalculado() -> None:
     templates = [_template(status=TemplateStatus.PENDENTE.value)]
     assert recalcular_status(MigracaoStatus.CANCELADA.value, templates) == MigracaoStatus.CANCELADA
+
+
+# --- tipo de migração sem NENHUM template obrigatório (ex.: pacote de eventos eSocial —
+# Seção "consolidação eSocial") — o operador escolhe livremente quais templates processar;
+# os nunca tocados (PENDENTE) não podem travar a migração para sempre. ---
+
+
+def test_todos_opcionais_todos_pendentes_fica_aguardando_arquivos() -> None:
+    templates = [
+        _template(obrigatorio=False, status=TemplateStatus.PENDENTE.value),
+        _template(obrigatorio=False, status=TemplateStatus.PENDENTE.value),
+    ]
+    assert recalcular_status(MigracaoStatus.CRIADA.value, templates) == MigracaoStatus.AGUARDANDO_ARQUIVOS
+
+
+def test_todos_opcionais_um_concluido_e_outros_intocados_fica_concluida() -> None:
+    templates = [
+        _template(
+            obrigatorio=False, status=TemplateStatus.VALIDADO.value, dados_aprovados=True,
+            script_gerado=True, script_aprovado=True, aplicado=True,
+        ),
+        _template(obrigatorio=False, status=TemplateStatus.PENDENTE.value),
+        _template(obrigatorio=False, status=TemplateStatus.PENDENTE.value),
+    ]
+    assert recalcular_status(MigracaoStatus.AGUARDANDO_APLICACAO.value, templates) == MigracaoStatus.CONCLUIDA
+
+
+def test_todos_opcionais_um_ainda_em_validacao_nao_conclui() -> None:
+    concluido = dict(
+        obrigatorio=False, status=TemplateStatus.VALIDADO.value, dados_aprovados=True,
+        script_gerado=True, script_aprovado=True, aplicado=True,
+    )
+    templates = [
+        _template(**concluido),
+        _template(obrigatorio=False, status=TemplateStatus.EM_VALIDACAO.value),
+        _template(obrigatorio=False, status=TemplateStatus.PENDENTE.value),
+    ]
+    assert recalcular_status(MigracaoStatus.EM_VALIDACAO.value, templates) == MigracaoStatus.EM_VALIDACAO
+
+
+def test_todos_opcionais_um_com_erro_de_aplicacao_fica_com_erro() -> None:
+    templates = [
+        _template(
+            obrigatorio=False, status=TemplateStatus.VALIDADO.value, dados_aprovados=True,
+            script_gerado=True, script_aprovado=True, aplicado_com_erro=True,
+        ),
+        _template(obrigatorio=False, status=TemplateStatus.PENDENTE.value),
+    ]
+    assert recalcular_status(MigracaoStatus.AGUARDANDO_APLICACAO.value, templates) == MigracaoStatus.COM_ERRO
