@@ -10,7 +10,7 @@
 <body>
 <header class="topbar">
   <div>
-    <h1>Plataforma de Migração de Dados ERP/HCM</h1>
+    <h1>Plataforma de Migração de Dados - Teknisa</h1>
     <div class="sub">Teknisa</div>
   </div>
   <div class="user">
@@ -23,10 +23,10 @@
 <nav class="topnav">
   <a class="item{% if request.url.path == '/portal-migration/' %} active{% endif %}" href="/portal-migration/">Painel de Migrações</a>
   {% if usuario.papel == 'administrador' %}
-  <a class="item{% if '/portal-migration/admin/operadores' in request.url.path %} active{% endif %}" href="/portal-migration/admin/operadores">Operadores</a>
   <a class="item{% if '/portal-migration/admin/organizacoes' in request.url.path %} active{% endif %}" href="/portal-migration/admin/organizacoes">Organizações</a>
   <a class="item{% if '/portal-migration/admin/templates' in request.url.path %} active{% endif %}" href="/portal-migration/admin/templates">Templates</a>
   <a class="item{% if '/portal-migration/admin/tipos-migracao' in request.url.path %} active{% endif %}" href="/portal-migration/admin/tipos-migracao">Tipos de Migração</a>
+  <a class="item{% if '/portal-migration/admin/operadores' in request.url.path %} active{% endif %}" href="/portal-migration/admin/operadores">Operadores</a>
   {% endif %}
 </nav>
 <main class="content">
@@ -34,6 +34,6 @@
   {% if sucesso %}<div class="flash sucesso">{{ sucesso }}</div>{% endif %}
   {% block conteudo %}{% endblock %}
 </main>
-<script src="/portal-migration/static/js/portal-migration.js"></script>
+<script src="/portal-migration/static/js/portal.js"></script>
 </body>
 </html>

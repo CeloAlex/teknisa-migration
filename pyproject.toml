@@ -1,7 +1,7 @@
 [project]
 name = "teknisa-migration-platform"
 version = "0.1.0"
-description = "Plataforma de Migração de Dados ERP/HCM — motor genérico orientado por metadados"
+description = "Plataforma de Migração de Dados - Teknisa — motor genérico orientado por metadados"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",

@@ -6,11 +6,17 @@
   <title>Entrar — Plataforma de Migração de Dados</title>
   <link rel="stylesheet" href="/portal-migration/static/css/app.css">
 </head>
-<body>
+<body class="login-body">
 <div class="login-wrap">
+  <div class="login-decor" aria-hidden="true">
+    <span class="dot blue"></span>
+    <span class="dot green"></span>
+    <span class="dot gold"></span>
+  </div>
   <div class="card login-card">
+    <img class="login-logo" src="/portal-migration/static/images/logo-teknisa.png" alt="Teknisa">
     <h2>Plataforma de Migração de Dados</h2>
-    <div class="desc">Teknisa — ERP/HCM</div>
+    <div class="desc">Teknisa</div>
     {% if erro %}<div class="flash erro">{{ erro }}</div>{% endif %}
     <form method="post" action="/portal-migration/login">
       <div class="field">

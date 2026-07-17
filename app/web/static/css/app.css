@@ -146,8 +146,30 @@ small.hint{color:var(--muted); font-size:11.3px;}
 
 /* Adições específicas do portal (não existiam no protótipo, que não tinha telas de
    login/auth reais nem CRUD server-rendered de admin). */
-.login-wrap{display:flex; align-items:center; justify-content:center; min-height:100vh;}
-.login-card{width:360px;}
+.login-body{
+  margin:0;
+  background:
+    url("/portal-migration/static/images/data-pattern.svg"),
+    linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 60%, #123a8f 100%);
+  background-repeat:repeat, no-repeat;
+  background-size:240px 160px, cover;
+  min-height:100vh;
+}
+.login-wrap{position:relative; display:flex; align-items:center; justify-content:center; min-height:100vh; overflow:hidden;}
+.login-decor{position:absolute; inset:0; pointer-events:none;}
+.login-decor .dot{position:absolute; border-radius:50%; opacity:0.85; filter:blur(0.3px);}
+.login-decor .dot.blue{width:22px; height:22px; background:#3b82f6; top:12%; left:10%;}
+.login-decor .dot.green{width:16px; height:16px; background:var(--green); top:70%; left:16%;}
+.login-decor .dot.gold{width:14px; height:14px; background:#f2b400; top:22%; right:12%;}
+.login-card{
+  width:380px; position:relative; z-index:1;
+  box-shadow:0 18px 50px rgba(10,25,70,0.35);
+  text-align:center;
+}
+.login-logo{max-width:180px; height:auto; margin:4px auto 14px;}
+.login-card h2{font-size:17px; margin-bottom:2px;}
+.login-card .field{text-align:left;}
+.login-card .btnbar .btn{width:100%;}
 .flash{padding:10px 14px; border-radius:8px; font-size:12.8px; margin-bottom:14px;}
 .flash.erro{background:var(--red-bg); color:var(--red);}
 .flash.sucesso{background:var(--green-bg); color:var(--green);}

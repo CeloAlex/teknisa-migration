@@ -55,7 +55,7 @@
   {% set cor = status_migracao_meta(m.status)[0] %}
   {% set rotulo = status_migracao_meta(m.status)[1] %}
   <div class="mig-card">
-    <div class="org">{{ organizacoes_nome.get(m.nr_org, m.nr_org) }}</div>
+    <div class="org">{{ organizacoes_nome.get(m.nr_org, m.nr_org) }} <span class="mono">({{ m.nr_org }})</span></div>
     <div class="info">
       #{{ m.id }} — {{ m.tipo_migracao.nome }} ({{ m.tipo_migracao.banco_destino }})<br>
       Operador: {{ m.operador }} — Criada em {{ m.dt_criacao | data_br }}

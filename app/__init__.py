@@ -1,1 +1,1 @@
-"""Plataforma de Migração de Dados ERP/HCM — motor genérico orientado por metadados."""
+"""Plataforma de Migração de Dados - Teknisa — motor genérico orientado por metadados."""

@@ -20,7 +20,7 @@ from app.web.templates_env import templates as web_templates
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="Plataforma de Migração de Dados ERP/HCM",
+        title="Plataforma de Migração de Dados - Teknisa",
         description="Motor genérico de migração orientado por metadados — upload, validação, geração de SQL, aprovação e aplicação.",
         version="0.1.0",
     )
