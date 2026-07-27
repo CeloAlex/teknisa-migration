@@ -151,6 +151,7 @@ async def gerar_script_importacao(
     arquivo: UploadFile,
     nr_org: Annotated[int, Form()],
     operacao: Annotated[str, Form()] = "INCLUSAO",
+    linhas_por_commit: Annotated[int, Form()] = 1,
     db: AsyncSession = Depends(get_db),
 ) -> Response:
     """Upload de XLSX → leitura → validação → geração de INSERT → download do .sql — só as
@@ -168,7 +169,9 @@ async def gerar_script_importacao(
     settings = get_settings()
     contexto = ContextoExecucao(nr_org=nr_org, usuario_tecnico=settings.usuario_tecnico_padrao)
     try:
-        script_sql = await gerar_script(db, linhas_validas, template, contexto, operacao=operacao)
+        script_sql = await gerar_script(
+            db, linhas_validas, template, contexto, operacao=operacao, linhas_por_commit=linhas_por_commit
+        )
     except ScriptNaoConfigurado as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

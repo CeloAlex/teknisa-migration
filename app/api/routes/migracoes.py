@@ -1,3 +1,5 @@
+import io
+import zipfile
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, UploadFile
@@ -8,7 +10,6 @@ from sqlalchemy.orm import selectinload
 
 from app.api.schemas import (
     AcaoComUsuarioRequest,
-    AplicarRequest,
     MigracaoCriarRequest,
     MigracaoDetalheResponse,
     MigracaoEventoResponse,
@@ -22,6 +23,7 @@ from app.migracoes import acoes
 from app.models.migracao import Migracao, MigracaoEvento, MigracaoTemplateStatus
 from app.models.organizacao import Organizacao
 from app.models.staging import ScriptGerado, StagingBruto, StagingNormalizado, ValidacaoResultado
+from app.models.tipo_migracao import TipoMigracaoTemplate
 from app.validation.classificacao import Classificacao
 
 router = APIRouter(prefix="/migracoes", tags=["migracoes"])
@@ -218,6 +220,7 @@ async def listar_validacoes(
             valor_recebido=v.valor_recebido,
             valor_esperado=v.valor_esperado,
             orientacao=v.mensagem,
+            origem=v.origem,
         )
         for linha, v in linhas
     ]
@@ -247,10 +250,11 @@ async def gerar_script_persistido(
     template_codigo: str,
     body: AcaoComUsuarioRequest,
     operacao: str = "INCLUSAO",
+    linhas_por_commit: int = 1,
     db: AsyncSession = Depends(get_db),
 ) -> MigracaoTemplateStatusResponse:
     migracao, mts = await acoes.carregar_migracao_e_mts(db, migracao_id, template_codigo)
-    await acoes.gerar_script(db, migracao, mts, body.usuario, operacao)
+    await acoes.gerar_script(db, migracao, mts, body.usuario, operacao, linhas_por_commit)
     return _mts_to_response(mts)
 
 
@@ -258,7 +262,7 @@ async def gerar_script_persistido(
 async def baixar_script(
     migracao_id: int, template_codigo: str, db: AsyncSession = Depends(get_db)
 ) -> Response:
-    _, mts = await acoes.carregar_migracao_e_mts(db, migracao_id, template_codigo)
+    migracao, mts = await acoes.carregar_migracao_e_mts(db, migracao_id, template_codigo)
     stmt = (
         select(ScriptGerado)
         .where(ScriptGerado.migracao_template_status_id == mts.id)
@@ -267,11 +271,63 @@ async def baixar_script(
     script = (await db.execute(stmt)).scalars().first()
     if script is None:
         raise acoes.AcaoInvalida("Nenhum script gerado ainda para este template.", status_code=404)
-    nome_arquivo = f"{template_codigo.lower()}_{script.operacao.lower()}.sql"
+
+    ordem_stmt = select(TipoMigracaoTemplate.ordem).where(
+        TipoMigracaoTemplate.tipo_migracao_id == migracao.tipo_migracao_id,
+        TipoMigracaoTemplate.template_id == mts.template_id,
+    )
+    ordem = (await db.execute(ordem_stmt)).scalar_one()
+    # Prefixo de ordem (Seção 26.3, mesma sequência do grafo de dependências) — facilita
+    # identificar em qual sequência aplicar os scripts baixados, sem depender de abrir a
+    # tela e conferir um por um.
+    nome_arquivo = f"{ordem:02d}_{template_codigo.lower()}_{script.operacao.lower()}.sql"
     return Response(
         content=script.conteudo_sql,
         media_type="application/sql",
         headers={"Content-Disposition": f'attachment; filename="{nome_arquivo}"'},
+    )
+
+
+@router.get("/{migracao_id}/scripts.zip")
+async def baixar_scripts_zip(migracao_id: int, db: AsyncSession = Depends(get_db)) -> Response:
+    """Baixa todos os scripts já gerados desta migração em um único .zip, um arquivo por
+    template — mesmo prefixo de ordem de `baixar_script` (Seção 26.3), para aplicar na
+    sequência certa sem precisar baixar template por template."""
+    migracao = await acoes.carregar_migracao(db, migracao_id)
+
+    ordem_stmt = select(TipoMigracaoTemplate.template_id, TipoMigracaoTemplate.ordem).where(
+        TipoMigracaoTemplate.tipo_migracao_id == migracao.tipo_migracao_id
+    )
+    ordem_por_template_id = dict((await db.execute(ordem_stmt)).all())
+
+    buffer = io.BytesIO()
+    templates_com_script = 0
+    with zipfile.ZipFile(buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zip_arquivo:
+        templates_em_ordem = sorted(
+            migracao.templates_status, key=lambda mts: ordem_por_template_id.get(mts.template_id, 0)
+        )
+        for mts in templates_em_ordem:
+            stmt = (
+                select(ScriptGerado)
+                .where(ScriptGerado.migracao_template_status_id == mts.id)
+                .order_by(ScriptGerado.dt_geracao.desc())
+            )
+            script = (await db.execute(stmt)).scalars().first()
+            if script is None:
+                continue
+            ordem = ordem_por_template_id.get(mts.template_id, 0)
+            nome_arquivo = f"{ordem:02d}_{mts.template.codigo.lower()}_{script.operacao.lower()}.sql"
+            zip_arquivo.writestr(nome_arquivo, script.conteudo_sql)
+            templates_com_script += 1
+
+    if templates_com_script == 0:
+        raise acoes.AcaoInvalida("Nenhum script gerado ainda para esta migração.", status_code=404)
+
+    nome_zip = f"migracao_{migracao_id}_scripts.zip"
+    return Response(
+        content=buffer.getvalue(),
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{nome_zip}"'},
     )
 
 
@@ -289,8 +345,8 @@ async def aprovar_script(
 
 @router.post("/{migracao_id}/templates/{template_codigo}/aplicar", response_model=MigracaoTemplateStatusResponse)
 async def aplicar_script(
-    migracao_id: int, template_codigo: str, body: AplicarRequest, db: AsyncSession = Depends(get_db)
+    migracao_id: int, template_codigo: str, body: AcaoComUsuarioRequest, db: AsyncSession = Depends(get_db)
 ) -> MigracaoTemplateStatusResponse:
     migracao, mts = await acoes.carregar_migracao_e_mts(db, migracao_id, template_codigo)
-    acoes.aplicar(db, migracao, mts, body.usuario, body.sucesso, body.detalhe_erro)
+    await acoes.aplicar(db, migracao, mts, body.usuario)
     return _mts_to_response(mts)

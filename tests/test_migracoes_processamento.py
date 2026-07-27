@@ -105,6 +105,57 @@ async def test_continuar_template_que_nao_esta_pausado_retorna_400(
     assert response.status_code == 400
 
 
+async def test_reenvio_enquanto_importacao_anterior_ainda_roda_e_bloqueado(
+    client: AsyncClient, nr_org_teste: int
+) -> None:
+    """Reproduz a corrida que corrompia `total_linhas` (dois envios sobrepostos do mesmo
+    template — o segundo reseta os contadores no banco enquanto o primeiro ainda está no
+    meio do loop de `_processar_pendentes_ate_o_fim`, que os relê via `session.refresh`):
+    um reenvio enquanto a importação anterior ainda está em andamento agora é rejeitado
+    (409) em vez de disparar uma segunda task em paralelo sobre o mesmo staging."""
+    migracao = await _criar_migracao(client, nr_org_teste, TIPO_AGENCIAS)
+    migracao_id = migracao["id"]
+
+    total_linhas = 30
+    conteudo = _xlsx_agencias_com_n_linhas(total_linhas)
+    primeiro_upload = await client.post(
+        f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/arquivo",
+        files={
+            "arquivo": (
+                "agencias.xlsx", conteudo, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+        },
+        data={"usuario": "Beatriz Nunes", "tamanho_lote": "3", "atraso_lote_ms": "30"},
+    )
+    assert primeiro_upload.status_code == 202
+
+    await asyncio.sleep(0.1)  # garante que a primeira task já está processando lotes
+
+    segundo_upload = await client.post(
+        f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/arquivo",
+        files={
+            "arquivo": (
+                "agencias.xlsx", conteudo, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+        },
+        data={"usuario": "Beatriz Nunes"},
+    )
+    assert segundo_upload.status_code == 409
+    assert "em andamento" in segundo_upload.text
+
+    for _ in range(100):
+        status_final = (await client.get(f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS")).json()
+        if status_final["status"] == "validado":
+            break
+        await asyncio.sleep(0.02)
+    else:
+        raise AssertionError(f"Processamento não concluiu a tempo: {status_final}")
+
+    # o contador cacheado bate com a contagem real — nenhuma corrida corrompeu total_linhas.
+    assert status_final["total_linhas"] == total_linhas
+    assert status_final["linhas_processadas"] == total_linhas
+
+
 async def test_sequencia_travada_bloqueia_upload_fora_de_ordem(client: AsyncClient, nr_org_teste: int) -> None:
     """No tipo ONBOARDING, Vínculo depende de Agências/Estrutura/Ocupação/Escala (Seção
     26.3) — subir o arquivo de Vínculo antes desses quatro estarem validados deve falhar."""

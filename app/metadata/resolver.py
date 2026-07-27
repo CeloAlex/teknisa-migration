@@ -45,6 +45,8 @@ async def resolver_template(session: AsyncSession, codigo: str) -> TemplateMetad
             gerador_pk=c.gerador_pk,
             gerador_pk_contador=c.gerador_pk_contador,
             gerador_pk_seed=c.gerador_pk_seed,
+            fk_template_codigo=c.fk_template_codigo,
+            fk_campo=c.fk_campo,
         )
         for c in template.campos
     ]

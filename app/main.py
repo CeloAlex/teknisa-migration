@@ -10,6 +10,7 @@ from app.web.deps import NaoAutenticado, SemPermissao
 from app.web.routes import auth as web_auth
 from app.web.routes import dashboard as web_dashboard
 from app.web.routes import migracao as web_migracao
+from app.web.routes import novocodigo_admin as web_novocodigo_admin
 from app.web.routes import operadores as web_operadores
 from app.web.routes import organizacoes as web_organizacoes
 from app.web.routes import templates_admin as web_templates_admin
@@ -26,6 +27,19 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(SessionMiddleware, secret_key=get_settings().secret_key, same_site="lax")
 
+    @app.middleware("http")
+    async def _sem_cache_paginas_dinamicas(request: Request, call_next):
+        """Sem isso, o navegador pode reaproveitar do cache heurístico uma resposta antiga
+        do portal (dashboard, detalhe de migração etc.) sem revalidar — depois de uma ação
+        que muda dado no servidor (ex.: "Regerar script"), o redirect PRG pode acabar
+        mostrando a versão em cache em vez do conteúdo recém-atualizado. Os arquivos
+        estáticos (`/static`) ficam de fora — esses já têm cache-busting próprio via
+        `?v=<mtime>` em `static_version()`, então cache agressivo neles é desejável."""
+        response = await call_next(request)
+        if not request.url.path.startswith("/portal-migration/static/"):
+            response.headers["Cache-Control"] = "no-store"
+        return response
+
     app.include_router(health.router, tags=["health"])
     app.include_router(templates.router)
     app.include_router(tipos_migracao.router)
@@ -34,6 +48,7 @@ def create_app() -> FastAPI:
     app.include_router(web_auth.router)
     app.include_router(web_dashboard.router)
     app.include_router(web_migracao.router)
+    app.include_router(web_novocodigo_admin.router)
     app.include_router(web_operadores.router)
     app.include_router(web_organizacoes.router)
     app.include_router(web_templates_admin.router)

@@ -14,7 +14,7 @@ async def test_tipo_individual_nao_tem_sequencia_obrigatoria(client: AsyncClient
     assert response.status_code == 200
     body = response.json()
     assert body["sequencia_obrigatoria"] is False
-    assert len(body["templates"]) == 13
+    assert len(body["templates"]) == 14
     # nenhum template obrigatório nem com dependência travada neste tipo
     assert all(t["obrigatorio"] is False for t in body["templates"])
     assert all(t["depende_de"] == [] for t in body["templates"])
@@ -34,6 +34,7 @@ async def test_tipo_onboarding_aplica_grafo_de_dependencias_da_secao_26_3(client
     assert set(por_codigo["ALTERACAO_ESCALA"]["depende_de"]) == {"VINCULO", "ESCALA"}
     assert set(por_codigo["FICHA_FINANCEIRA"]["depende_de"]) == {"VINCULO", "EVENTOS"}
     assert por_codigo["AGENCIAS_BANCARIAS"]["depende_de"] == []
+    assert por_codigo["DEPENDENTES"]["depende_de"] == ["VINCULO"]
 
 
 async def test_tipo_migracao_inexistente_retorna_404(client: AsyncClient) -> None:

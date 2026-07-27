@@ -292,12 +292,13 @@ async def gerar_script(
     migracao_id: int,
     codigo: str,
     operacao: Annotated[str, Form()] = "INCLUSAO",
+    linhas_por_commit: Annotated[int, Form()] = 1,
     usuario: Usuario = Depends(exigir_papel(Papel.OPERADOR, Papel.APROVADOR_FUNCIONAL, Papel.ADMINISTRADOR)),
     db: AsyncSession = Depends(get_db),
 ):
     migracao, mts = await _carregar_com_mts(db, migracao_id, codigo, usuario)
     try:
-        await acoes.gerar_script(db, migracao, mts, usuario.nome, operacao)
+        await acoes.gerar_script(db, migracao, mts, usuario.nome, operacao, linhas_por_commit)
     except AcaoInvalida as exc:
         _flash_erro(request, exc.mensagem)
     return _redirect_aba(migracao_id, "scripts")
@@ -324,14 +325,12 @@ async def aplicar(
     request: Request,
     migracao_id: int,
     codigo: str,
-    sucesso: Annotated[bool, Form()] = True,
-    detalhe_erro: Annotated[str | None, Form()] = None,
     usuario: Usuario = Depends(exigir_papel(Papel.EXECUTOR_DBA, Papel.ADMINISTRADOR)),
     db: AsyncSession = Depends(get_db),
 ):
     migracao, mts = await _carregar_com_mts(db, migracao_id, codigo, usuario)
     try:
-        acoes.aplicar(db, migracao, mts, usuario.nome, sucesso, detalhe_erro)
+        await acoes.aplicar(db, migracao, mts, usuario.nome)
     except AcaoInvalida as exc:
         _flash_erro(request, exc.mensagem)
     return _redirect_aba(migracao_id, "execucao")

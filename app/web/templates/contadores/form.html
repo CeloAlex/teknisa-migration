@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block titulo %}{{ "Editar contador" if contador else "Novo contador" }}{% endblock %}
+{% block conteudo %}
+<div class="card">
+  <h2>{{ "Editar contador" if contador else "Novo contador" }}</h2>
+  {% if erro %}<div class="flash erro">{{ erro }}</div>{% endif %}
+  <form method="post" action="{{ '/portal-migration/admin/contadores/' ~ contador.nr_org ~ '/' ~ contador.cd_contador ~ '/editar' if contador else '/portal-migration/admin/contadores/novo' }}">
+    <div class="field">
+      <label for="nr_org">Número da organização</label>
+      {% if contador %}
+      <input type="number" value="{{ contador.nr_org }}" disabled>
+      {% else %}
+      <input type="number" id="nr_org" name="nr_org" required>
+      {% endif %}
+    </div>
+    <div class="field">
+      <label for="cd_contador">Contador (tabela de destino, ex.: FPA_ITECALCFOLHA)</label>
+      {% if contador %}
+      <input type="text" value="{{ contador.cd_contador }}" disabled>
+      {% else %}
+      <input type="text" id="cd_contador" name="cd_contador" required>
+      {% endif %}
+    </div>
+    <div class="field">
+      <label for="nr_proximo">Último código reservado</label>
+      <input type="number" id="nr_proximo" name="nr_proximo" value="{{ contador.nr_proximo if contador else 0 }}" required>
+      <small class="hint">A próxima geração de script vai usar este valor + 1.</small>
+    </div>
+    <div class="btnbar">
+      <a class="btn secondary" href="/portal-migration/admin/contadores">Cancelar</a>
+      <button class="btn" type="submit">{{ "Salvar" if contador else "Criar" }}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -4,6 +4,8 @@ from io import BytesIO
 from httpx import AsyncClient
 from openpyxl import Workbook
 
+from app.execution.engine import ResultadoExecucao
+
 TIPO_AGENCIAS = "MIG_AGENCIAS_INDIVIDUAL"
 
 
@@ -77,7 +79,14 @@ async def test_erro_impeditivo_bloqueia_aprovacao_e_migracao_fica_aguardando_cor
     assert detalhe["status"] == "aguardando_aprovacao"
 
 
-async def test_alerta_nao_bloqueia_e_migracao_conclui_com_alertas(client: AsyncClient, nr_org_teste: int) -> None:
+async def test_alerta_nao_bloqueia_e_migracao_conclui_com_alertas(
+    client: AsyncClient, nr_org_teste: int, monkeypatch
+) -> None:
+    async def _fake_executar_script(sql: str) -> ResultadoExecucao:
+        return ResultadoExecucao(sucesso=True, comandos_executados=1)
+
+    monkeypatch.setattr("app.migracoes.acoes.executar_script", _fake_executar_script)
+
     migracao = await _criar_migracao(client, nr_org_teste)
     migracao_id = migracao["id"]
 
@@ -91,7 +100,7 @@ async def test_alerta_nao_bloqueia_e_migracao_conclui_com_alertas(client: AsyncC
     await client.post(f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/gerar-script", json={"usuario": "Carlos"})
     await client.post(f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aprovar-script", json={"usuario": "Ana"})
     await client.post(
-        f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aplicar", json={"usuario": "Diego", "sucesso": True}
+        f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aplicar", json={"usuario": "Diego"}
     )
 
     detalhe = (await client.get(f"/migracoes/{migracao_id}")).json()

@@ -14,3 +14,4 @@ class ResultadoValidacao:
     valor_recebido: str
     valor_esperado: str
     orientacao: str
+    origem: str | None = None

@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.config import get_settings
+from app.destination.oracle import OracleNaoConfigurado
+from app.execution.engine import executar_script
 from app.metadata.resolver import resolver_template
 from app.migracoes.estado import ResumoTemplate, recalcular_status
 from app.models.migracao import (
@@ -70,12 +72,30 @@ class AcaoInvalida(Exception):
 # disparam o mesmo processamento em background.
 _tarefas_em_background: set[asyncio.Task] = set()
 
+# Rastreado à parte, por mts_id, para bloquear um reenvio enquanto o processamento
+# anterior do MESMO template ainda está rodando (ver `_importacao_em_andamento`) — sem
+# isso, duas importações sobrepostas correm em paralelo sobre o mesmo staging: a segunda
+# reseta `total_linhas`/`linhas_processadas` via `resetar_para_reprocessamento` enquanto a
+# primeira ainda está no meio do loop de `_processar_pendentes_ate_o_fim`, que faz
+# `session.refresh(mts)` a cada lote — a primeira relê esse reset em memória e termina
+# commitando "validado" com `total_linhas=0`, mesmo com as linhas corretamente processadas
+# (contagens ao vivo, como a da aba Validação, ficam certas; só o contador cacheado fica
+# desalinhado).
+_tarefas_por_mts: dict[int, asyncio.Task] = {}
 
-def _disparar_em_background(coro: Coroutine[Any, Any, None]) -> asyncio.Task:
+
+def _disparar_em_background(mts_id: int, coro: Coroutine[Any, Any, None]) -> asyncio.Task:
     tarefa = asyncio.create_task(coro)
     _tarefas_em_background.add(tarefa)
+    _tarefas_por_mts[mts_id] = tarefa
     tarefa.add_done_callback(_tarefas_em_background.discard)
+    tarefa.add_done_callback(lambda t, mts_id=mts_id: _tarefas_por_mts.pop(mts_id, None) if _tarefas_por_mts.get(mts_id) is t else None)
     return tarefa
+
+
+def _importacao_em_andamento(mts_id: int) -> bool:
+    tarefa = _tarefas_por_mts.get(mts_id)
+    return tarefa is not None and not tarefa.done()
 
 
 # --- carregamento --------------------------------------------------------------------------
@@ -239,6 +259,13 @@ async def importar_arquivo(
             f'Migração está em estado terminal ("{migracao.status}") — não aceita novos arquivos.'
         )
 
+    if _importacao_em_andamento(mts.id):
+        raise AcaoInvalida(
+            f'Já existe uma importação em andamento para "{mts.template.codigo}" — aguarde '
+            "terminar antes de reenviar.",
+            status_code=409,
+        )
+
     if migracao.tipo_migracao.sequencia_obrigatoria:
         tmt_stmt = (
             select(TipoMigracaoTemplate)
@@ -271,7 +298,7 @@ async def importar_arquivo(
     lote = tamanho_lote or get_settings().tamanho_lote_processamento
     atraso = (atraso_lote_ms / 1000) if atraso_lote_ms is not None else 0.001
     _disparar_em_background(
-        processar_arquivo_em_background(mts.id, mts.template_id, conteudo, migracao.nr_org, lote, atraso)
+        mts.id, processar_arquivo_em_background(mts.id, mts.template_id, conteudo, migracao.nr_org, lote, atraso)
     )
 
     registrar_evento(db, migracao.id, f"Arquivo importado — {mts.template.codigo}", usuario)
@@ -293,13 +320,17 @@ async def continuar(
 ) -> None:
     if not mts.pausado:
         raise AcaoInvalida("Este template não está pausado.")
+    if _importacao_em_andamento(mts.id):
+        raise AcaoInvalida(
+            f'Já existe uma importação em andamento para "{mts.template.codigo}".', status_code=409
+        )
     mts.pausado = False
     await db.flush()
 
     lote = tamanho_lote or get_settings().tamanho_lote_processamento
     atraso = (atraso_lote_ms / 1000) if atraso_lote_ms is not None else 0.001
     _disparar_em_background(
-        retomar_processamento_em_background(mts.id, mts.template_id, migracao.nr_org, lote, atraso)
+        mts.id, retomar_processamento_em_background(mts.id, mts.template_id, migracao.nr_org, lote, atraso)
     )
 
 
@@ -316,27 +347,53 @@ def aprovar_dados(db: AsyncSession, migracao: Migracao, mts: MigracaoTemplateSta
 
 
 async def gerar_script(
-    db: AsyncSession, migracao: Migracao, mts: MigracaoTemplateStatus, usuario: str, operacao: str = "INCLUSAO"
+    db: AsyncSession,
+    migracao: Migracao,
+    mts: MigracaoTemplateStatus,
+    usuario: str,
+    operacao: str = "INCLUSAO",
+    linhas_por_commit: int = 1,
 ) -> None:
     if not mts.dados_aprovados:
         raise AcaoInvalida("Aprove os dados deste template antes de gerar o script.")
+
+    if mts.aplicado:
+        raise AcaoInvalida(
+            f'Script de "{mts.template.codigo}" já foi aplicado no Oracle — não é possível '
+            "gerar de novo (evita reaplicar os mesmos dados). Reverta a migração antes, se "
+            "precisar refazer.",
+            status_code=409,
+        )
 
     template_meta = await resolver_template(db, mts.template.codigo)
     linhas_validas = await buscar_linhas_validas(db, mts.id)
     if not linhas_validas:
         raise AcaoInvalida("Nenhuma linha válida para gerar script.", status_code=422)
 
+    if linhas_por_commit < 1:
+        raise AcaoInvalida("linhas_por_commit deve ser pelo menos 1.", status_code=422)
+
     settings = get_settings()
     contexto = ContextoExecucao(nr_org=migracao.nr_org, usuario_tecnico=settings.usuario_tecnico_padrao)
     try:
-        sql = await _gerar_script_sql(db, linhas_validas, template_meta, contexto, operacao=operacao)
+        sql = await _gerar_script_sql(
+            db, linhas_validas, template_meta, contexto, operacao=operacao, linhas_por_commit=linhas_por_commit
+        )
     except ScriptNaoConfigurado as exc:
         raise AcaoInvalida(str(exc)) from exc
 
+    era_regeracao = mts.script_gerado
     db.add(ScriptGerado(migracao_template_status_id=mts.id, operacao=operacao, conteudo_sql=sql))
     mts.script_gerado = True
+    # Regenerar invalida uma aprovação técnica anterior — o conteúdo mudou, precisa de
+    # revisão nova (mesmo raciocínio de `resetar_para_reprocessamento` para reenvio de
+    # arquivo: o estado de aprovação não pode sobreviver a uma troca de conteúdo).
+    if mts.script_aprovado:
+        mts.script_aprovado = False
+        mts.aprovado_script_por = None
     atualizar_status_migracao(migracao)
-    registrar_evento(db, migracao.id, f"Script gerado — {mts.template.codigo}", usuario)
+    verbo = "regerado" if era_regeracao else "gerado"
+    registrar_evento(db, migracao.id, f"Script {verbo} — {mts.template.codigo}", usuario)
 
 
 def aprovar_script(db: AsyncSession, migracao: Migracao, mts: MigracaoTemplateStatus, usuario: str) -> None:
@@ -350,27 +407,48 @@ def aprovar_script(db: AsyncSession, migracao: Migracao, mts: MigracaoTemplateSt
     registrar_evento(db, migracao.id, f"Script aprovado — {mts.template.codigo}", usuario)
 
 
-def aplicar(
+async def aplicar(
     db: AsyncSession,
     migracao: Migracao,
     mts: MigracaoTemplateStatus,
     usuario: str,
-    sucesso: bool,
-    detalhe_erro: str | None = None,
 ) -> None:
-    """Confirmação de aplicação do script (Anexo J — MVP aplica o `.sql` manualmente fora da
-    plataforma; este endpoint registra o resultado dessa aplicação manual, não executa nada
-    no Oracle diretamente, já que essa integração ainda não existe)."""
+    """Execução real do script no Oracle de destino (Execution Engine, Modo Script — Anexo
+    A/Seção 11): roda o `.sql` já aprovado tecnicamente contra o banco configurado em
+    ORACLE_DSN/ORACLE_USER/ORACLE_PASSWORD e registra o resultado. Substitui a confirmação
+    manual do MVP original (Anexo J), já que a integração com o Oracle passou a existir."""
     if not mts.script_aprovado:
         raise AcaoInvalida("Aprove tecnicamente o script antes de aplicá-lo.")
 
-    if sucesso:
+    stmt = (
+        select(ScriptGerado)
+        .where(ScriptGerado.migracao_template_status_id == mts.id)
+        .order_by(ScriptGerado.dt_geracao.desc())
+    )
+    script = (await db.execute(stmt)).scalars().first()
+    if script is None:
+        raise AcaoInvalida("Nenhum script gerado para este template.", status_code=404)
+
+    try:
+        resultado = await executar_script(script.conteudo_sql)
+    except OracleNaoConfigurado as exc:
+        raise AcaoInvalida(str(exc)) from exc
+
+    if resultado.sucesso:
         mts.aplicado = True
         mts.aplicado_com_erro = False
-        evento = f"Script aplicado — {mts.template.codigo}"
+        evento = (
+            f"Script aplicado no Oracle — {mts.template.codigo} "
+            f"({resultado.comandos_executados} comando(s))"
+        )
     else:
         mts.aplicado_com_erro = True
-        evento = f"Falha ao aplicar script — {mts.template.codigo}: {detalhe_erro or 'sem detalhe informado'}"
+        evento = (
+            f"Falha ao aplicar script — {mts.template.codigo}: "
+            f"{resultado.detalhe_erro or 'sem detalhe informado'} "
+            f"({resultado.comandos_executados} comando(s) já commitado(s) antes da falha — "
+            "commits anteriores ao lote com erro não são desfeitos)"
+        )
 
     atualizar_status_migracao(migracao)
     registrar_evento(db, migracao.id, evento, usuario)

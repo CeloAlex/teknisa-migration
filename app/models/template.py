@@ -81,6 +81,12 @@ class TemplateCampo(Base):
     # protótipo declara por campo em pkGeracao.
     gerador_pk_contador: Mapped[str | None] = mapped_column(String(100))
     gerador_pk_seed: Mapped[int | None] = mapped_column(Integer)
+    # Validação relacional local (Seção 7.4): quando preenchidos, o valor deste campo
+    # precisa aparecer entre os valores já importados no campo `fk_campo` do template
+    # `fk_template_codigo`, dentro da mesma migração — antecipa uma FK que resolveria para
+    # NULL na aplicação real (ex.: código de Estrutura com typo entre dois uploads).
+    fk_template_codigo: Mapped[str | None] = mapped_column(String(50))
+    fk_campo: Mapped[str | None] = mapped_column(String(100))
 
     template: Mapped["Template"] = relationship(back_populates="campos")
 

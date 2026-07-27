@@ -1,6 +1,11 @@
 <div class="card">
   <h3>Downloads</h3>
   <div class="desc">Scripts SQL gerados por template — a aplicação real no banco de destino é feita fora da plataforma (Anexo J).</div>
+  {% if scripts.values() | select | list %}
+  <div class="btnbar" style="justify-content:flex-start; margin-top:0; margin-bottom:16px;">
+    <a class="btn small" href="/migracoes/{{ migracao_id }}/scripts.zip">Baixar todos (.zip)</a>
+  </div>
+  {% endif %}
   <table>
     <thead><tr><th>Template</th><th>Script (.sql)</th></tr></thead>
     <tbody>

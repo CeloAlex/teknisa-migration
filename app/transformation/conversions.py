@@ -55,6 +55,15 @@ def _data_br(valor: Any, campo: CampoMetadata) -> str:
         # (ex. 33022 = 29/05/1990). Equivalente ao XLSX.SSF.parse_date_code do protótipo.
         return from_excel(valor).strftime("%d/%m/%Y")
     texto = str(valor)
+    # `StagingBruto.dados_json` é JSONB: um datetime/date bruto de célula com formatação de
+    # data no Excel vira string ISO 8601 (`_json_seguro`, "AAAA-MM-DDTHH:MM:SS") antes de
+    # chegar aqui — sem essa checagem, o split abaixo (pensado pra DD/MM/AAAA ou DD-MM-AAAA)
+    # lia "AAAA" como dia e devolvia algo como "2021/11/01T00:00:00" (ORA-01861 na aplicação
+    # real, já visto em produção).
+    try:
+        return datetime.fromisoformat(texto).strftime("%d/%m/%Y")
+    except ValueError:
+        pass
     partes = re.split(r"[/-]", texto)
     if len(partes) == 3:
         dia, mes, ano = partes

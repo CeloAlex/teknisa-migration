@@ -64,6 +64,9 @@ class ValidacaoResultado(Base):
     valor_recebido: Mapped[str] = mapped_column(Text)
     valor_esperado: Mapped[str] = mapped_column(Text)
     mensagem: Mapped[str] = mapped_column(Text)
+    # Coluna da planilha (ex.: "E") ou XPath do XML de onde o campo é lido — nulo para
+    # campos vindos de parâmetro de execução (ex.: NRORG), que não têm origem no arquivo.
+    origem: Mapped[str | None] = mapped_column(String(200))
 
     staging_normalizado: Mapped["StagingNormalizado"] = relationship(back_populates="validacoes")
 

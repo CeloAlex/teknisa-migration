@@ -78,6 +78,53 @@ async def test_operacao_sem_script_configurado_leva_a_erro_explicito() -> None:
         await gerar_script(None, [{"CDBANCO": "001", "CDAGENCIA": "0019", "NRORG": 1410}], template, contexto)
 
 
+async def test_default_linhas_por_commit_e_um_commit_por_linha() -> None:
+    template = _template()
+    contexto = ContextoExecucao(nr_org=1410, usuario_tecnico="000000099991")
+    linhas = [
+        {"CDBANCO": "001", "CDAGENCIA": "0019", "NRORG": 1410},
+        {"CDBANCO": "033", "CDAGENCIA": "0125", "NRORG": 1410},
+        {"CDBANCO": "104", "CDAGENCIA": "0031", "NRORG": 1410},
+    ]
+
+    script = await gerar_script(None, linhas, template, contexto)
+
+    assert script.count("COMMIT;") == 3
+    # cada COMMIT vem logo depois do INSERT da própria linha, não só no fim do script.
+    linhas_script = [l for l in script.splitlines() if l.strip()]
+    assert linhas_script[1] == "COMMIT;"
+    assert linhas_script[3] == "COMMIT;"
+    assert linhas_script[5] == "COMMIT;"
+
+
+async def test_linhas_por_commit_agrupa_commits_em_lotes() -> None:
+    template = _template()
+    contexto = ContextoExecucao(nr_org=1410, usuario_tecnico="000000099991")
+    linhas = [
+        {"CDBANCO": "001", "CDAGENCIA": "0019", "NRORG": 1410},
+        {"CDBANCO": "033", "CDAGENCIA": "0125", "NRORG": 1410},
+        {"CDBANCO": "104", "CDAGENCIA": "0031", "NRORG": 1410},
+    ]
+
+    # lote de 2: commit depois da 2ª linha, e um commit final cobrindo a 3ª (sobra).
+    script = await gerar_script(None, linhas, template, contexto, linhas_por_commit=2)
+
+    assert script.count("COMMIT;") == 2
+    linhas_script = [l for l in script.splitlines() if l.strip()]
+    assert linhas_script[2] == "COMMIT;"  # depois da 2ª linha (2 INSERTs antes dele)
+    assert linhas_script[-1] == "COMMIT;"  # commit final cobrindo a linha que sobrou
+
+
+async def test_linhas_por_commit_menor_que_um_leva_a_erro() -> None:
+    template = _template()
+    contexto = ContextoExecucao(nr_org=1410, usuario_tecnico="000000099991")
+
+    with pytest.raises(ValueError):
+        await gerar_script(
+            None, [{"CDBANCO": "001", "CDAGENCIA": "0019", "NRORG": 1410}], template, contexto, linhas_por_commit=0
+        )
+
+
 async def test_bloco_condicional_e_pulado_quando_condicao_falsa() -> None:
     template = _template()
     template.scripts["INCLUSAO"].append(

@@ -78,6 +78,36 @@ async def _processar_lote(
     return len(pendentes)
 
 
+async def _buscar_valores_fk(
+    session: AsyncSession, migracao_id: int, template_meta: TemplateMetadata
+) -> dict[str, set[str]]:
+    """Pré-carrega, uma vez por validação (não por linha), o conjunto de valores já
+    importados nos templates referenciados por `fk_template_codigo`/`fk_campo` (Seção 7.4)
+    — usado por `validar_linha` para checar a FK localmente, sem depender do Oracle de
+    destino. Um template referenciado sem nenhuma linha importada nesta migração (ex.: FK
+    aponta pra um dado que já existia no Oracle antes desta migração, não veio de nenhum
+    upload) simplesmente não entra no dict — melhor não validar do que reprovar tudo por
+    falta de dado local de comparação."""
+    valores_fk: dict[str, set[str]] = {}
+    for campo_meta in template_meta.campos:
+        if not campo_meta.fk_template_codigo:
+            continue
+        stmt = (
+            select(StagingNormalizado.dados_json[campo_meta.fk_campo].astext)
+            .join(StagingBruto, StagingBruto.id == StagingNormalizado.staging_bruto_id)
+            .join(MigracaoTemplateStatus, MigracaoTemplateStatus.id == StagingBruto.migracao_template_status_id)
+            .join(Template, Template.id == MigracaoTemplateStatus.template_id)
+            .where(
+                MigracaoTemplateStatus.migracao_id == migracao_id,
+                Template.codigo == campo_meta.fk_template_codigo,
+            )
+        )
+        encontrados = {v.strip() for (v,) in (await session.execute(stmt)).all() if v is not None and v.strip()}
+        if encontrados:
+            valores_fk[campo_meta.campo] = encontrados
+    return valores_fk
+
+
 async def _executar_validacao(session: AsyncSession, mts: MigracaoTemplateStatus, template_meta: TemplateMetadata) -> None:
     """Validation Engine (Fase 2+) aplicado a todas as linhas já normalizadas de um template,
     persistindo cada resultado — equivalente a `executarValidacao` do protótipo."""
@@ -85,11 +115,12 @@ async def _executar_validacao(session: AsyncSession, mts: MigracaoTemplateStatus
         StagingBruto.migracao_template_status_id == mts.id
     )
     normalizados = (await session.execute(stmt)).scalars().all()
+    valores_fk = await _buscar_valores_fk(session, mts.migracao_id, template_meta)
 
     tem_erro = False
     tem_alerta = False
     for staging_normalizado in normalizados:
-        for resultado in validar_linha(staging_normalizado.dados_json, template_meta):
+        for resultado in validar_linha(staging_normalizado.dados_json, template_meta, valores_fk):
             session.add(
                 ValidacaoResultado(
                     staging_normalizado_id=staging_normalizado.id,
@@ -99,6 +130,7 @@ async def _executar_validacao(session: AsyncSession, mts: MigracaoTemplateStatus
                     valor_recebido=resultado.valor_recebido,
                     valor_esperado=resultado.valor_esperado,
                     mensagem=resultado.orientacao,
+                    origem=resultado.origem,
                 )
             )
             if resultado.classificacao == Classificacao.ERRO_IMPEDITIVO:

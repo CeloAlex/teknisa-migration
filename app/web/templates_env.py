@@ -4,7 +4,20 @@ from pathlib import Path
 from fastapi.templating import Jinja2Templates
 
 BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / "static"
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+
+def static_version(caminho_relativo: str) -> int:
+    """Cache-busting por `?v=<mtime>` (Anexo D não cobre isso — decisão de infra): sem
+    `Cache-Control` explícito, `StaticFiles` do Starlette só manda `Last-Modified`/`ETag`,
+    e o navegador pode servir uma cópia em cache sem revalidar por um bom tempo (cache
+    heurístico). Um `mtime` fresco a cada request faz o browser tratar a URL como um
+    recurso novo sempre que o arquivo muda — sem precisar de hard refresh manual."""
+    try:
+        return int((STATIC_DIR / caminho_relativo).stat().st_mtime)
+    except OSError:
+        return 0
 
 # Mapas cor/rótulo de badge — mesmo papel do STATUS_META/SEV_META do protótipo de
 # referência, só que consultados do lado do servidor (Jinja), não em JS no navegador.
@@ -86,6 +99,7 @@ def sql_legivel(template_sql: str) -> str:
     return _RE_FIM_INSTRUCAO.sub(r"\1\n", template_sql)
 
 
+templates.env.globals["static_version"] = static_version
 templates.env.globals["status_migracao_meta"] = status_migracao_meta
 templates.env.globals["status_template_meta"] = status_template_meta
 templates.env.globals["severidade_meta"] = severidade_meta

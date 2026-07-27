@@ -9,6 +9,21 @@
       <b>{{ mts.template.nome }}</b>
       <span class="badge {{ cor }}">{{ rotulo }}</span>
     </div>
+    {% if mts.arquivo_origem and mts.status != 'em_importacao' %}
+      {% if mts.status == 'com_inconsistencias' %}
+      <div class="banner block">
+        Arquivo enviado: <b>{{ mts.arquivo_origem }}</b> — {{ mts.total_linhas }} linha(s), com inconsistências (veja a aba Validação).
+      </div>
+      {% elif mts.status == 'validado' %}
+      <div class="banner ok">
+        Arquivo enviado: <b>{{ mts.arquivo_origem }}</b> — {{ mts.total_linhas }} linha(s) validada(s) com sucesso.
+      </div>
+      {% else %}
+      <div class="banner info">
+        Arquivo enviado: <b>{{ mts.arquivo_origem }}</b> — {{ mts.linhas_processadas }}/{{ mts.total_linhas }} linha(s) processada(s).
+      </div>
+      {% endif %}
+    {% endif %}
     {% if mts.status == 'em_importacao' %}
       {% include "_template_progress.html" %}
     {% elif usuario.papel in ('operador', 'administrador') %}
@@ -19,14 +34,9 @@
         </div>
         <input type="file" id="arquivo-{{ mts.template.codigo }}" name="arquivo" accept="{{ '.xml' if eh_xml else '.xlsx' }}" style="display:none" required>
         <div class="btnbar">
-          <button class="btn small" type="submit">Enviar arquivo</button>
+          <button class="btn small" type="submit">{{ 'Reenviar arquivo' if mts.arquivo_origem else 'Enviar arquivo' }}</button>
         </div>
       </form>
-      {% if mts.total_linhas %}
-      <small class="hint">Última importação: {{ mts.linhas_processadas }}/{{ mts.total_linhas }} linhas.</small>
-      {% endif %}
-    {% elif mts.total_linhas %}
-      <small class="hint">{{ mts.linhas_processadas }}/{{ mts.total_linhas }} linhas.</small>
     {% endif %}
   </div>
   {% endfor %}

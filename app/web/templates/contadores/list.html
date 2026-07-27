@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block titulo %}Contadores (Key Resolution){% endblock %}
+{% block conteudo %}
+<div class="card">
+  <h2>Contadores de geração de código</h2>
+  <div class="desc">
+    Tabela <span class="mono">novocodigo</span> — contador de PK sequencial por organização e por
+    tabela de destino (Key Resolution Service, Seção 6.1). O valor mostrado é o
+    <b>último código reservado</b>; a próxima geração de script vai usar esse valor + 1.
+    Editar aqui não desfaz nada já commitado no Oracle — só muda de onde a próxima reserva continua.
+  </div>
+
+  <form method="get" action="/portal-migration/admin/contadores" class="field" style="max-width:320px;">
+    <label for="nr_org">Organização</label>
+    <select id="nr_org" name="nr_org" onchange="this.form.submit()">
+      <option value="">Todas</option>
+      {% for nr in nr_orgs_disponiveis %}
+      <option value="{{ nr }}" {% if filtro_nr_org == nr %}selected{% endif %}>{{ organizacoes_nome.get(nr, nr) }} ({{ nr }})</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  {% if not contadores %}
+  <p class="desc">Nenhum contador encontrado.</p>
+  {% else %}
+  <table>
+    <thead><tr><th>Organização</th><th>Contador</th><th>Último código reservado</th><th>Próximo a sair</th><th></th></tr></thead>
+    <tbody>
+      {% for c in contadores %}
+      <tr>
+        <td>{{ organizacoes_nome.get(c.nr_org, c.nr_org) }} <span class="mono">({{ c.nr_org }})</span></td>
+        <td class="mono">{{ c.cd_contador }}</td>
+        <td class="mono">{{ c.nr_proximo }}</td>
+        <td class="mono">{{ c.nr_proximo + 1 }}</td>
+        <td class="table-actions">
+          <a class="btn small secondary" href="/portal-migration/admin/contadores/{{ c.nr_org }}/{{ c.cd_contador }}/editar">Editar</a>
+          <form class="inline" method="post" action="/portal-migration/admin/contadores/{{ c.nr_org }}/{{ c.cd_contador }}/zerar"
+                onsubmit="return confirm('Zerar este contador? A próxima reserva volta a começar em 1.');">
+            <button class="btn small danger" type="submit">Zerar</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <div class="btnbar">
+    <a class="btn" href="/portal-migration/admin/contadores/novo">+ Novo contador</a>
+  </div>
+</div>
+{% endblock %}

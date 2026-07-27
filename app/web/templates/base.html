@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block titulo %}Plataforma de Migração de Dados{% endblock %} — Teknisa</title>
-  <link rel="stylesheet" href="/portal-migration/static/css/app.css">
+  <link rel="stylesheet" href="/portal-migration/static/css/app.css?v={{ static_version('css/app.css') }}">
   <script src="/portal-migration/static/js/htmx.min.js"></script>
 </head>
 <body>
@@ -27,6 +27,7 @@
   <a class="item{% if '/portal-migration/admin/templates' in request.url.path %} active{% endif %}" href="/portal-migration/admin/templates">Templates</a>
   <a class="item{% if '/portal-migration/admin/tipos-migracao' in request.url.path %} active{% endif %}" href="/portal-migration/admin/tipos-migracao">Tipos de Migração</a>
   <a class="item{% if '/portal-migration/admin/operadores' in request.url.path %} active{% endif %}" href="/portal-migration/admin/operadores">Operadores</a>
+  <a class="item{% if '/portal-migration/admin/contadores' in request.url.path %} active{% endif %}" href="/portal-migration/admin/contadores">Contadores</a>
   {% endif %}
 </nav>
 <main class="content">
@@ -34,6 +35,6 @@
   {% if sucesso %}<div class="flash sucesso">{{ sucesso }}</div>{% endif %}
   {% block conteudo %}{% endblock %}
 </main>
-<script src="/portal-migration/static/js/portal.js"></script>
+<script src="/portal-migration/static/js/portal.js?v={{ static_version('js/portal.js') }}"></script>
 </body>
 </html>

@@ -1,3 +1,10 @@
+{% if scripts.values() | select | list %}
+<div class="card">
+  <div class="btnbar" style="justify-content:flex-start; margin-top:0;">
+    <a class="btn small" href="/migracoes/{{ migracao_id }}/scripts.zip">Baixar todos (.zip)</a>
+  </div>
+</div>
+{% endif %}
 {% for mts in templates_ordenados %}
 <div class="card">
   <h3>{{ mts.template.nome }}</h3>
@@ -8,23 +15,39 @@
     <div class="btnbar">
       <a class="btn small secondary" href="/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/script">Baixar .sql</a>
     </div>
-  {% elif not mts.dados_aprovados %}
+  {% endif %}
+
+  {% if not mts.dados_aprovados %}
+    {% if not script %}
     <div class="banner block">Aprove os dados deste template antes de gerar o script.</div>
+    {% endif %}
+  {% elif mts.aplicado %}
+    {% if not script %}
+    <div class="banner ok">Script já aplicado no Oracle.</div>
+    {% endif %}
   {% elif usuario.papel in ('operador', 'aprovador_funcional', 'administrador') %}
+    {% if script and mts.script_aprovado %}
+    <div class="banner warn">Regerar substitui o script já aprovado tecnicamente — a aprovação precisará ser feita de novo.</div>
+    {% endif %}
     <form method="post" action="/portal-migration/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/gerar-script">
       <div class="field" style="max-width:220px;">
         <label for="operacao-{{ mts.template.codigo }}">Operação</label>
         <select id="operacao-{{ mts.template.codigo }}" name="operacao">
-          <option value="INCLUSAO">Inclusão</option>
-          <option value="ALTERACAO">Alteração</option>
-          <option value="EXCLUSAO">Exclusão</option>
+          <option value="INCLUSAO" {% if script and script.operacao == 'INCLUSAO' %}selected{% endif %}>Inclusão</option>
+          <option value="ALTERACAO" {% if script and script.operacao == 'ALTERACAO' %}selected{% endif %}>Alteração</option>
+          <option value="EXCLUSAO" {% if script and script.operacao == 'EXCLUSAO' %}selected{% endif %}>Exclusão</option>
         </select>
       </div>
+      <div class="field" style="max-width:220px;">
+        <label for="linhas-commit-{{ mts.template.codigo }}">Linhas por COMMIT</label>
+        <input type="number" id="linhas-commit-{{ mts.template.codigo }}" name="linhas_por_commit" value="1" min="1" step="1">
+        <small class="hint">1 = commit a cada linha (padrão, igual às planilhas atuais).</small>
+      </div>
       <div class="btnbar">
-        <button class="btn" type="submit">Gerar script</button>
+        <button class="btn {% if script %}secondary{% endif %}" type="submit">{{ 'Regerar script' if script else 'Gerar script' }}</button>
       </div>
     </form>
-  {% else %}
+  {% elif not script %}
     <div class="banner info">Aguardando geração de script (perfil Operador/Aprovador Funcional/Administrador).</div>
   {% endif %}
 </div>

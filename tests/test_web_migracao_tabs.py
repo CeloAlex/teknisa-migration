@@ -7,6 +7,7 @@ from openpyxl import Workbook
 from sqlalchemy import text
 
 from app.db.session import AsyncSessionLocal
+from app.execution.engine import ResultadoExecucao
 from app.models.organizacao import Organizacao
 from app.models.usuario import Papel
 from tests.conftest import login
@@ -26,11 +27,19 @@ def _xlsx_agencias(n: int) -> bytes:
     return buffer.getvalue()
 
 
-async def test_fluxo_completo_pelas_8_abas_do_portal(client: AsyncClient, usuario_teste, nr_org_teste: int) -> None:
+async def test_fluxo_completo_pelas_8_abas_do_portal(
+    client: AsyncClient, usuario_teste, nr_org_teste: int, monkeypatch
+) -> None:
     """Caminho feliz completo — criar, subir arquivo, aprovar dados, gerar script, aprovar
     tecnicamente e aplicar — tudo via rotas do portal (não da API JSON), usando um
     Administrador (que tem todos os papéis liberados) para não misturar RBAC com o teste de
     fluxo em si (RBAC tem cobertura própria em test_auth.py)."""
+
+    async def _fake_executar_script(sql: str) -> ResultadoExecucao:
+        return ResultadoExecucao(sucesso=True, comandos_executados=1)
+
+    monkeypatch.setattr("app.migracoes.acoes.executar_script", _fake_executar_script)
+
     usuario, senha = await usuario_teste(Papel.ADMINISTRADOR.value)
     await login(client, usuario.email, senha)
 
@@ -102,7 +111,6 @@ async def test_fluxo_completo_pelas_8_abas_do_portal(client: AsyncClient, usuari
 
     aplicar = await client.post(
         f"/portal-migration/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aplicar",
-        data={"sucesso": "true"},
         follow_redirects=False,
     )
     assert aplicar.status_code == 303

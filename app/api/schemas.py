@@ -148,13 +148,8 @@ class ValidacaoPersistidaResponse(BaseModel):
     valor_recebido: str
     valor_esperado: str
     orientacao: str
+    origem: str | None = None
 
 
 class AcaoComUsuarioRequest(BaseModel):
     usuario: str
-
-
-class AplicarRequest(BaseModel):
-    usuario: str
-    sucesso: bool = True
-    detalhe_erro: str | None = None

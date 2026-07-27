@@ -8,6 +8,7 @@
     <div class="field">
       <label for="nr_org">Organização</label>
       <select id="nr_org" name="nr_org" required>
+        <option value="" selected disabled>Selecione a organização…</option>
         {% for org in organizacoes %}
         <option value="{{ org.nr_org }}">{{ org.nome }}</option>
         {% endfor %}
@@ -16,6 +17,7 @@
     <div class="field">
       <label for="tipo_migracao_codigo">Tipo de migração</label>
       <select id="tipo_migracao_codigo" name="tipo_migracao_codigo" required>
+        <option value="" selected disabled>Selecione o tipo de migração…</option>
         {% for tipo in tipos %}
         <option value="{{ tipo.codigo }}">{{ tipo.nome }} ({{ tipo.banco_destino }})</option>
         {% endfor %}

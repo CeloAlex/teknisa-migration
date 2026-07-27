@@ -3,6 +3,8 @@ from io import BytesIO
 from httpx import AsyncClient
 from openpyxl import Workbook
 
+from app.execution.engine import ResultadoExecucao
+
 TIPO_AGENCIAS = "MIG_AGENCIAS_INDIVIDUAL"
 
 
@@ -60,7 +62,12 @@ async def test_bloqueia_segunda_migracao_ativa_para_mesma_organizacao(
     assert response.status_code == 409
 
 
-async def test_ciclo_de_vida_completo_ate_concluida(client: AsyncClient, nr_org_teste: int) -> None:
+async def test_ciclo_de_vida_completo_ate_concluida(client: AsyncClient, nr_org_teste: int, monkeypatch) -> None:
+    async def _fake_executar_script(sql: str) -> ResultadoExecucao:
+        return ResultadoExecucao(sucesso=True, comandos_executados=1)
+
+    monkeypatch.setattr("app.migracoes.acoes.executar_script", _fake_executar_script)
+
     migracao = await _criar_migracao(client, nr_org_teste)
     migracao_id = migracao["id"]
 
@@ -110,7 +117,7 @@ async def test_ciclo_de_vida_completo_ate_concluida(client: AsyncClient, nr_org_
     assert detalhe["status"] == "aguardando_aplicacao"
 
     aplicar = await client.post(
-        f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aplicar", json={"usuario": "Diego", "sucesso": True}
+        f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aplicar", json={"usuario": "Diego"}
     )
     assert aplicar.status_code == 200
     assert aplicar.json()["aplicado"] is True
@@ -127,7 +134,14 @@ async def test_ciclo_de_vida_completo_ate_concluida(client: AsyncClient, nr_org_
     assert nova.status_code == 201
 
 
-async def test_aplicar_com_falha_leva_a_com_erro_e_permite_reverter(client: AsyncClient, nr_org_teste: int) -> None:
+async def test_aplicar_com_falha_leva_a_com_erro_e_permite_reverter(
+    client: AsyncClient, nr_org_teste: int, monkeypatch
+) -> None:
+    async def _fake_executar_script(sql: str) -> ResultadoExecucao:
+        return ResultadoExecucao(sucesso=False, comandos_executados=0, detalhe_erro="violação de FK")
+
+    monkeypatch.setattr("app.migracoes.acoes.executar_script", _fake_executar_script)
+
     migracao = await _criar_migracao(client, nr_org_teste)
     migracao_id = migracao["id"]
 
@@ -142,8 +156,7 @@ async def test_aplicar_com_falha_leva_a_com_erro_e_permite_reverter(client: Asyn
     await client.post(f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aprovar-script", json={"usuario": "Ana"})
 
     aplicar = await client.post(
-        f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aplicar",
-        json={"usuario": "Diego", "sucesso": False, "detalhe_erro": "violação de FK"},
+        f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aplicar", json={"usuario": "Diego"}
     )
     assert aplicar.status_code == 200
     assert aplicar.json()["aplicado_com_erro"] is True
@@ -154,6 +167,63 @@ async def test_aplicar_com_falha_leva_a_com_erro_e_permite_reverter(client: Asyn
     reverter = await client.post(f"/migracoes/{migracao_id}/reverter", json={"usuario": "Diego"})
     assert reverter.status_code == 200
     assert reverter.json()["status"] == "revertida"
+
+
+async def test_regerar_script_reseta_aprovacao_tecnica_ja_feita(client: AsyncClient, nr_org_teste: int) -> None:
+    migracao = await _criar_migracao(client, nr_org_teste)
+    migracao_id = migracao["id"]
+
+    await client.post(
+        f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/arquivo",
+        files={"arquivo": ("agencias.xlsx", _xlsx_agencias_valida(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+        data={"usuario": "Beatriz Nunes"},
+    )
+    await _aguardar_status_template(client, migracao_id, "AGENCIAS_BANCARIAS", {"validado", "com_inconsistencias"})
+    await client.post(f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aprovar-dados", json={"usuario": "Carlos"})
+    await client.post(f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/gerar-script", json={"usuario": "Carlos"})
+    aprovar_script = await client.post(
+        f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aprovar-script", json={"usuario": "Ana"}
+    )
+    assert aprovar_script.json()["script_aprovado"] is True
+
+    # regerar (ex.: com outro linhas_por_commit) invalida a aprovação técnica anterior —
+    # o conteúdo mudou, precisa de revisão nova.
+    regerar = await client.post(
+        f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/gerar-script?linhas_por_commit=1",
+        json={"usuario": "Carlos"},
+    )
+    assert regerar.status_code == 200
+    assert regerar.json()["script_gerado"] is True
+    assert regerar.json()["script_aprovado"] is False
+
+
+async def test_gerar_script_apos_aplicado_e_bloqueado(client: AsyncClient, nr_org_teste: int, monkeypatch) -> None:
+    async def _fake_executar_script(sql: str) -> ResultadoExecucao:
+        return ResultadoExecucao(sucesso=True, comandos_executados=1)
+
+    monkeypatch.setattr("app.migracoes.acoes.executar_script", _fake_executar_script)
+
+    migracao = await _criar_migracao(client, nr_org_teste)
+    migracao_id = migracao["id"]
+
+    await client.post(
+        f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/arquivo",
+        files={"arquivo": ("agencias.xlsx", _xlsx_agencias_valida(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+        data={"usuario": "Beatriz Nunes"},
+    )
+    await _aguardar_status_template(client, migracao_id, "AGENCIAS_BANCARIAS", {"validado", "com_inconsistencias"})
+    await client.post(f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aprovar-dados", json={"usuario": "Carlos"})
+    await client.post(f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/gerar-script", json={"usuario": "Carlos"})
+    await client.post(f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aprovar-script", json={"usuario": "Ana"})
+    aplicar = await client.post(
+        f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aplicar", json={"usuario": "Diego"}
+    )
+    assert aplicar.json()["aplicado"] is True
+
+    regerar = await client.post(
+        f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/gerar-script", json={"usuario": "Carlos"}
+    )
+    assert regerar.status_code == 409
 
 
 async def test_cancelar_migracao_libera_organizacao(client: AsyncClient, nr_org_teste: int) -> None:

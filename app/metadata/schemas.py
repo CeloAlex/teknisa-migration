@@ -23,6 +23,12 @@ class CampoMetadata:
     gerador_pk: bool
     gerador_pk_contador: str | None = None
     gerador_pk_seed: int | None = None
+    # Validação relacional local (Seção 7.4 — antecipar FK que vai falhar na aplicação,
+    # sem depender do Oracle de destino): quando preenchidos, o valor deste campo precisa
+    # aparecer entre os valores já importados no campo `fk_campo` do template
+    # `fk_template_codigo`, dentro da MESMA migração (ver `app/validation/engine.py`).
+    fk_template_codigo: str | None = None
+    fk_campo: str | None = None
 
     @property
     def vem_do_contexto(self) -> bool:

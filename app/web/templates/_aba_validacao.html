@@ -20,9 +20,10 @@
     {% endif %}
     {% set ocorr = ocorrencias.get(mts.template.codigo) %}
     {% if ocorr %}
+    {% set eh_xml = 'XML' in mts.template.formatos_aceitos %}
     <div class="tblwrap">
       <table>
-        <thead><tr><th>Severidade</th><th>Linha</th><th>Campo</th><th>Recebido</th><th>Esperado</th><th>Orientação</th></tr></thead>
+        <thead><tr><th>Severidade</th><th>Linha</th><th>Campo</th><th>Origem</th><th>Recebido</th><th>Esperado</th><th>Orientação</th></tr></thead>
         <tbody>
           {% for linha, v in ocorr %}
           {% set scor = severidade_meta(v.classificacao)[0] %}
@@ -31,6 +32,12 @@
             <td><span class="badge {{ scor }}">{{ srot }}</span></td>
             <td>{{ linha }}</td>
             <td class="mono">{{ v.campo }}</td>
+            <td class="mono">
+              {% if not v.origem %}—
+              {% elif eh_xml %}{{ v.origem }}
+              {% else %}Coluna {{ v.origem }}
+              {% endif %}
+            </td>
             <td>{{ v.valor_recebido }}</td>
             <td>{{ v.valor_esperado }}</td>
             <td>{{ v.mensagem }}</td>
