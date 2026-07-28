@@ -111,6 +111,12 @@ class MigracaoTemplateStatus(Base):
 
     aplicado: Mapped[bool] = mapped_column(Boolean, default=False)
     aplicado_com_erro: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Rastreabilidade da última execução real no Oracle (Execution Engine) — a mensagem de
+    # erro completa (ex.: "ORA-00001: unique constraint...") e quantos comandos já tinham
+    # sido commitados antes da falha (nenhum é desfeito automaticamente: o commit é do
+    # próprio script, não uma transação única). Sobrescrito a cada nova tentativa.
+    detalhe_erro_aplicacao: Mapped[str | None] = mapped_column(Text)
+    comandos_executados_aplicacao: Mapped[int | None] = mapped_column(Integer)
 
     dt_importacao: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

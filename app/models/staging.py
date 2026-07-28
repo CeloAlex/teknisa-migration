@@ -84,3 +84,22 @@ class ScriptGerado(Base):
     operacao: Mapped[str] = mapped_column(String(20))
     conteudo_sql: Mapped[str] = mapped_column(Text)
     dt_geracao: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ExecucaoErro(Base):
+    """Um comando que falhou numa execução real no Oracle de destino (Seção 7.4/11) —
+    persistido por comando, não só o primeiro, pra dar rastreabilidade completa ao
+    operador (pedido explícito do usuário) e permitir exportar o log inteiro pra análise
+    posterior. `acoes.aplicar` apaga os registros da tentativa anterior antes de gravar os
+    da nova — reflete sempre a última execução, não um histórico acumulado."""
+
+    __tablename__ = "execucao_erro"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    migracao_template_status_id: Mapped[int] = mapped_column(
+        ForeignKey("migracao_template_status.id", ondelete="CASCADE"), index=True
+    )
+    indice_comando: Mapped[int] = mapped_column(Integer)
+    comando_sql: Mapped[str] = mapped_column(Text)
+    mensagem_erro: Mapped[str] = mapped_column(Text)
+    dt_execucao: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

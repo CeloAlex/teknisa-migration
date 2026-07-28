@@ -7,7 +7,7 @@ from openpyxl import Workbook
 from sqlalchemy import text
 
 from app.db.session import AsyncSessionLocal
-from app.execution.engine import ResultadoExecucao
+from app.execution.engine import ErroComando, ResultadoExecucao
 from app.models.organizacao import Organizacao
 from app.models.usuario import Papel
 from tests.conftest import login
@@ -122,6 +122,100 @@ async def test_fluxo_completo_pelas_8_abas_do_portal(
 
     tab_downloads = await client.get(migracao_url, params={"aba": "downloads"})
     assert "Baixar .sql" in tab_downloads.text
+
+
+async def test_falha_ao_aplicar_mostra_erro_na_aba_execucao_e_permite_tentar_de_novo(
+    client: AsyncClient, usuario_teste, nr_org_teste: int, monkeypatch
+) -> None:
+    """Reproduz o caso relatado: erro real do Oracle (ex.: ORA-00001 unique constraint)
+    precisa aparecer na própria aba Execução, não só na Trilha completa — e o operador
+    precisa conseguir tentar de novo sem sair da tela."""
+    usuario, senha = await usuario_teste(Papel.ADMINISTRADOR.value)
+    await login(client, usuario.email, senha)
+
+    criar = await client.post(
+        "/portal-migration/migracoes/nova",
+        data={"nr_org": nr_org_teste, "tipo_migracao_codigo": TIPO_AGENCIAS},
+        follow_redirects=False,
+    )
+    migracao_url = criar.headers["location"]
+    migracao_id = int(migracao_url.rstrip("/").split("/")[-1])
+
+    await client.post(
+        f"/portal-migration/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/arquivo",
+        files={
+            "arquivo": (
+                "agencias.xlsx", _xlsx_agencias(1),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+        follow_redirects=False,
+    )
+    for _ in range(50):
+        status = await client.get(f"/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS")
+        if status.json()["status"] == "validado":
+            break
+        await asyncio.sleep(0.05)
+    else:
+        raise AssertionError("Processamento não concluiu a tempo")
+
+    await client.post(
+        f"/portal-migration/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aprovar-dados",
+        follow_redirects=False,
+    )
+    await client.post(
+        f"/portal-migration/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/gerar-script",
+        data={"operacao": "INCLUSAO"}, follow_redirects=False,
+    )
+    await client.post(
+        f"/portal-migration/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aprovar-script",
+        follow_redirects=False,
+    )
+
+    mensagem_oracle = "ORA-00001: unique constraint (FOLHA.PK_AGENCIA) violated"
+
+    async def _fake_falha(sql: str) -> ResultadoExecucao:
+        return ResultadoExecucao(
+            sucesso=False,
+            comandos_executados=0,
+            detalhe_erro=mensagem_oracle,
+            erros=[ErroComando(indice=1, comando="INSERT INTO GPE_AGENCIA VALUES (...)", mensagem=mensagem_oracle)],
+        )
+
+    monkeypatch.setattr("app.migracoes.acoes.executar_script", _fake_falha)
+    aplicar_falha = await client.post(
+        f"/portal-migration/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aplicar",
+        follow_redirects=False,
+    )
+    assert aplicar_falha.status_code == 303
+
+    tab_execucao = await client.get(migracao_url, params={"aba": "execucao"})
+    assert mensagem_oracle in tab_execucao.text
+    assert "Tentar novamente" in tab_execucao.text
+    assert "não são desfeitos" in tab_execucao.text
+    assert "Baixar log" in tab_execucao.text
+    assert f"/migracoes/{migracao_id}/erros-execucao.xlsx" in tab_execucao.text
+
+    log_xlsx = await client.get(f"/migracoes/{migracao_id}/erros-execucao.xlsx")
+    assert log_xlsx.status_code == 200
+    assert log_xlsx.headers["content-type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+    async def _fake_sucesso(sql: str) -> ResultadoExecucao:
+        return ResultadoExecucao(sucesso=True, comandos_executados=1)
+
+    monkeypatch.setattr("app.migracoes.acoes.executar_script", _fake_sucesso)
+    aplicar_retry = await client.post(
+        f"/portal-migration/migracoes/{migracao_id}/templates/AGENCIAS_BANCARIAS/aplicar",
+        follow_redirects=False,
+    )
+    assert aplicar_retry.status_code == 303
+
+    # a mensagem de erro continua na trilha completa (histórico, correto ficar lá), mas o
+    # card de execução do template não mostra mais o banner de falha nem "Tentar novamente"
+    # — só o card correspondente ao AGENCIAS_BANCARIAS deixou de ter aplicado_com_erro.
+    tab_execucao_ok = await client.get(migracao_url, params={"aba": "execucao"})
+    assert "Tentar novamente" not in tab_execucao_ok.text
+    assert "Aplicado (1 comando" in tab_execucao_ok.text
 
 
 async def test_usuario_de_outra_organizacao_nao_acessa_migracao(

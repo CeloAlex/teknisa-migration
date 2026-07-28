@@ -1,7 +1,10 @@
-{% set ns = namespace(aplicados=0, total=0) %}
+{% set ns = namespace(aplicados=0, total=0, total_erros=0) %}
 {% for mts in templates_ordenados if mts.obrigatorio %}
   {% set ns.total = ns.total + 1 %}
   {% if mts.aplicado %}{% set ns.aplicados = ns.aplicados + 1 %}{% endif %}
+{% endfor %}
+{% for codigo, qtd in erros_execucao.items() %}
+  {% set ns.total_erros = ns.total_erros + qtd %}
 {% endfor %}
 <div class="card">
   <h3>Progresso geral</h3>
@@ -9,27 +12,60 @@
     <div class="fill" style="width: {{ ((ns.aplicados / ns.total * 100) if ns.total else 0) | round(1) }}%;"></div>
   </div>
   <small class="hint">{{ ns.aplicados }}/{{ ns.total }} templates obrigatórios aplicados</small>
+  {% if ns.total_erros > 0 %}
+  <div style="margin-top:10px;">
+    <a class="btn small danger" href="/migracoes/{{ migracao_id }}/erros-execucao.xlsx">
+      Baixar log de erros (.xlsx) — {{ ns.total_erros }} erro(s)
+    </a>
+  </div>
+  {% endif %}
 </div>
 
 <div class="card">
   <h3>Aplicação por template</h3>
   <div class="loglist">
     {% for mts in templates_ordenados %}
-    <div class="logline">
-      <span class="dot {% if mts.aplicado %}ok{% elif mts.aplicado_com_erro %}err{% else %}pending{% endif %}"></span>
-      <span style="flex:1;">{{ mts.template.nome }}</span>
-      {% if mts.aplicado %}
-        <span class="badge green">Aplicado</span>
-      {% elif mts.aplicado_com_erro %}
-        <span class="badge red">Falha ao aplicar</span>
-      {% elif not mts.script_aprovado %}
-        <span class="badge gray">Aguardando aprovação técnica</span>
-      {% elif usuario.papel in ('executor_dba', 'administrador') %}
-        <form class="inline" method="post" action="/portal-migration/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/aplicar">
-          <button class="btn success small" type="submit">Executar no Oracle</button>
-        </form>
-      {% else %}
-        <span class="badge blue">Pronto para aplicar (perfil Executor/DBA/Administrador)</span>
+    <div class="logline" style="flex-direction:column; align-items:stretch;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="dot {% if mts.aplicado %}ok{% elif mts.aplicado_com_erro %}err{% else %}pending{% endif %}"></span>
+        <span style="flex:1;">{{ mts.template.nome }}</span>
+        {% if mts.aplicado %}
+          <span class="badge green">Aplicado ({{ mts.comandos_executados_aplicacao }} comando(s))</span>
+        {% elif mts.aplicado_com_erro %}
+          <span class="badge red">Falha ao aplicar</span>
+        {% elif not mts.script_aprovado %}
+          <span class="badge gray">Aguardando aprovação técnica</span>
+        {% elif usuario.papel in ('executor_dba', 'administrador') %}
+          <form class="inline" method="post" action="/portal-migration/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/aplicar">
+            <button class="btn success small" type="submit">Executar no Oracle</button>
+          </form>
+        {% else %}
+          <span class="badge blue">Pronto para aplicar (perfil Executor/DBA/Administrador)</span>
+        {% endif %}
+      </div>
+      {% if mts.aplicado_com_erro %}
+      <div class="banner block" style="margin:8px 0 0;">
+        <div style="flex:1;">
+          <div class="mono" style="white-space:pre-wrap; word-break:break-word;">{{ mts.detalhe_erro_aplicacao or "Sem detalhe de erro informado pelo Oracle." }}</div>
+          <small class="hint">
+            {{ mts.comandos_executados_aplicacao }} comando(s) aplicado(s) com sucesso,
+            {{ erros_execucao.get(mts.template.codigo, 0) }} erro(s) — a execução prosseguiu até o
+            fim do script em vez de parar no primeiro erro. Os comandos com sucesso
+            <b>não são desfeitos automaticamente</b> (o commit é do próprio script, não é uma
+            transação única). Confira no Oracle o que já foi gravado antes de tentar de novo.
+          </small>
+          {% if erros_execucao.get(mts.template.codigo, 0) > 0 %}
+          <div style="margin-top:6px;">
+            <a class="btn small secondary" href="/migracoes/{{ migracao_id }}/erros-execucao.xlsx">Baixar log completo de erros (.xlsx)</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% if usuario.papel in ('executor_dba', 'administrador') %}
+      <form class="inline" method="post" action="/portal-migration/migracoes/{{ migracao_id }}/templates/{{ mts.template.codigo }}/aplicar" style="margin-top:8px;">
+        <button class="btn danger small" type="submit">Tentar novamente</button>
+      </form>
+      {% endif %}
       {% endif %}
     </div>
     {% endfor %}

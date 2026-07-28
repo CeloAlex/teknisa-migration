@@ -26,12 +26,23 @@
     <form class="inline" method="post" action="/portal-migration/migracoes/{{ migracao.id }}/cancelar">
       <button class="btn danger small" type="submit">Cancelar migração</button>
     </form>
-    {% if migracao.status == 'com_erro' %}
-    <form class="inline" method="post" action="/portal-migration/migracoes/{{ migracao.id }}/reverter">
-      <button class="btn secondary small" type="submit">Confirmar rollback (reverter)</button>
-    </form>
-    {% endif %}
   </div>
+  {% if migracao.status == 'com_erro' %}
+  <div class="banner warn" style="margin-top:14px;">
+    <div>
+      <b>Este botão não desfaz nada no Oracle.</b> A Execution Engine commita direto no
+      banco de destino conforme o script roda — o que já foi aplicado com sucesso (veja a
+      aba Execução) fica lá permanentemente. "Confirmar reversão" só registra, dentro da
+      plataforma, que alguém já reverteu manualmente o que era necessário fora dela (Anexo
+      J). Confira os detalhes de erro na aba Execução antes de confirmar.
+      <div class="btnbar" style="justify-content:flex-start; margin-top:10px;">
+        <form class="inline" method="post" action="/portal-migration/migracoes/{{ migracao.id }}/reverter">
+          <button class="btn secondary small" type="submit">Confirmar reversão manual</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
   {% endif %}
 </div>
 

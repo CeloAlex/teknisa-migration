@@ -106,6 +106,8 @@ class MigracaoTemplateStatusResponse(BaseModel):
     script_aprovado: bool
     aplicado: bool
     aplicado_com_erro: bool
+    detalhe_erro_aplicacao: str | None = None
+    comandos_executados_aplicacao: int | None = None
 
 
 class MigracaoEventoResponse(BaseModel):

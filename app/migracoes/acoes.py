@@ -3,7 +3,7 @@ import hashlib
 from datetime import datetime, timezone
 from typing import Any, Coroutine
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -21,7 +21,7 @@ from app.models.migracao import (
     TemplateStatus,
 )
 from app.models.organizacao import Organizacao
-from app.models.staging import ScriptGerado
+from app.models.staging import ExecucaoErro, ScriptGerado
 from app.models.tipo_migracao import TipoMigracao, TipoMigracaoTemplate
 from app.scripts.generator import ContextoExecucao, ScriptNaoConfigurado
 from app.scripts.generator import gerar_script as _gerar_script_sql
@@ -229,9 +229,12 @@ def cancelar_migracao(db: AsyncSession, migracao: Migracao, usuario: str) -> Non
 
 
 def reverter_migracao(db: AsyncSession, migracao: Migracao, usuario: str) -> None:
-    """Confirmação manual de rollback (Seção 9.2 — "com erro -> revertida"). A reversão em
-    si é executada fora da plataforma (sem integração com o Oracle de destino ainda); este
-    endpoint só registra que ela foi concluída."""
+    """Confirmação manual de rollback (Seção 9.2 — "com erro -> revertida", Anexo J). Mesmo
+    com a Execution Engine já conectada ao Oracle de verdade, a reversão em si continua
+    manual/fora da plataforma — os commits do script (por linha ou em lote, conforme
+    `linhas_por_commit`) já são reais e definitivos quando o erro acontece, então não há
+    "desfazer" automático a fazer aqui. Este endpoint só registra que a reversão manual foi
+    concluída."""
     if migracao.status != MigracaoStatus.COM_ERRO.value:
         raise AcaoInvalida('Só é possível reverter uma migração em estado "com_erro".')
     migracao.status = MigracaoStatus.REVERTIDA.value
@@ -434,20 +437,40 @@ async def aplicar(
     except OracleNaoConfigurado as exc:
         raise AcaoInvalida(str(exc)) from exc
 
+    # Reflete sempre a última tentativa de aplicação, não um histórico acumulado — uma
+    # tentativa anterior mal sucedida não deve poluir o log de uma nova (Seção 7.4/11).
+    await db.execute(
+        delete(ExecucaoErro).where(ExecucaoErro.migracao_template_status_id == mts.id)
+    )
+    for erro in resultado.erros:
+        db.add(
+            ExecucaoErro(
+                migracao_template_status_id=mts.id,
+                indice_comando=erro.indice,
+                comando_sql=erro.comando,
+                mensagem_erro=erro.mensagem,
+            )
+        )
+
+    mts.comandos_executados_aplicacao = resultado.comandos_executados
     if resultado.sucesso:
         mts.aplicado = True
         mts.aplicado_com_erro = False
+        mts.detalhe_erro_aplicacao = None
         evento = (
             f"Script aplicado no Oracle — {mts.template.codigo} "
             f"({resultado.comandos_executados} comando(s))"
         )
     else:
         mts.aplicado_com_erro = True
+        mts.detalhe_erro_aplicacao = resultado.detalhe_erro
         evento = (
             f"Falha ao aplicar script — {mts.template.codigo}: "
             f"{resultado.detalhe_erro or 'sem detalhe informado'} "
-            f"({resultado.comandos_executados} comando(s) já commitado(s) antes da falha — "
-            "commits anteriores ao lote com erro não são desfeitos)"
+            f"({resultado.comandos_executados} comando(s) aplicado(s), "
+            f"{len(resultado.erros)} erro(s) — a execução prosseguiu até o fim do script "
+            "para dar o diagnóstico completo; commits anteriores ao(s) erro(s) não são "
+            "desfeitos)"
         )
 
     atualizar_status_migracao(migracao)

@@ -9,7 +9,7 @@ from app.db.session import get_db
 from app.migracoes import acoes
 from app.migracoes.acoes import AcaoInvalida
 from app.models.migracao import Migracao, MigracaoTemplateStatus, TemplateStatus
-from app.models.staging import ScriptGerado, StagingBruto, StagingNormalizado, ValidacaoResultado
+from app.models.staging import ExecucaoErro, ScriptGerado, StagingBruto, StagingNormalizado, ValidacaoResultado
 from app.models.tipo_migracao import TipoMigracaoTemplate
 from app.models.usuario import Papel, Usuario
 from app.validation.classificacao import Classificacao
@@ -145,6 +145,17 @@ async def detalhe_migracao(
             )
             scripts[mts.template.codigo] = (await db.execute(stmt)).scalars().first()
         contexto["scripts"] = scripts
+
+    if aba == "execucao":
+        erros_stmt = (
+            select(ExecucaoErro.migracao_template_status_id, func.count())
+            .where(ExecucaoErro.migracao_template_status_id.in_([mts.id for mts in templates_ordenados]))
+            .group_by(ExecucaoErro.migracao_template_status_id)
+        )
+        erros_por_mts_id = dict((await db.execute(erros_stmt)).all())
+        contexto["erros_execucao"] = {
+            mts.template.codigo: erros_por_mts_id.get(mts.id, 0) for mts in templates_ordenados
+        }
 
     if aba == "aprovacao_tecnica":
         scripts = {}

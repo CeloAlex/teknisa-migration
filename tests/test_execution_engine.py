@@ -77,10 +77,44 @@ async def test_erro_nao_desfaz_lotes_ja_commitados(monkeypatch) -> None:
     resultado = await executar_script(sql)
 
     assert resultado.sucesso is False
-    assert resultado.comandos_executados == 2  # linhas 1 e 2 já tinham sido commitadas.
+    assert resultado.comandos_executados == 2  # linhas 1 e 2 tiveram sucesso.
     assert "INSERT INTO A VALUES (3)" in resultado.detalhe_erro
     assert cursor.executados == ["INSERT INTO A VALUES (1)", "INSERT INTO A VALUES (2)"]
-    assert conexao.commits == 2  # commits das linhas 1 e 2 ficam de pé.
-    assert conexao.rollbacks == 1  # só o lote da linha 3 (sem commit ainda) é revertido.
+    assert conexao.commits == 3  # os 3 marcadores COMMIT do script rodam normalmente.
+    assert conexao.rollbacks == 0  # ninguém é revertido — Oracle não invalida a transação
+    #                                 por uma falha de statement isolado, ao contrário do Postgres.
     assert cursor.closed is True
     assert conexao.closed is True
+
+
+async def test_continua_apos_erro_e_acumula_todos_os_erros(monkeypatch) -> None:
+    """Pedido explícito do usuário: em vez de parar no primeiro problema, a execução deve
+    seguir pros comandos seguintes e devolver TODOS os erros encontrados, não só o
+    primeiro — dá o diagnóstico completo numa passada só, sem precisar de tentativa após
+    tentativa corrigindo um erro de cada vez."""
+    cursor = _FakeCursor(falhar_em={"INSERT INTO A VALUES (2)", "INSERT INTO A VALUES (4)"})
+    conexao = _FakeConnection(cursor)
+
+    async def _fake_conectar():
+        return conexao
+
+    monkeypatch.setattr("app.execution.engine.conectar", _fake_conectar)
+
+    sql = (
+        "INSERT INTO A VALUES (1);\n"
+        "INSERT INTO A VALUES (2);\n"
+        "INSERT INTO A VALUES (3);\n"
+        "INSERT INTO A VALUES (4);\n"
+        "COMMIT;"
+    )
+    resultado = await executar_script(sql)
+
+    assert resultado.sucesso is False
+    assert resultado.comandos_executados == 2  # linhas 1 e 3, as únicas sem erro.
+    assert cursor.executados == ["INSERT INTO A VALUES (1)", "INSERT INTO A VALUES (3)"]
+    assert [e.indice for e in resultado.erros] == [2, 4]
+    assert resultado.erros[0].comando == "INSERT INTO A VALUES (2)"
+    assert "INSERT INTO A VALUES (2)" in resultado.erros[0].mensagem
+    assert resultado.erros[1].comando == "INSERT INTO A VALUES (4)"
+    assert resultado.detalhe_erro == resultado.erros[0].mensagem  # compatibilidade: 1º erro
+    assert conexao.commits == 1  # o único marcador COMMIT do script, com o que sobrou.

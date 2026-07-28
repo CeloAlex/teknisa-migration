@@ -18,6 +18,14 @@ async def conectar() -> oracledb.AsyncConnection:
             "Conexão com o Oracle de destino não configurada — preencha ORACLE_DSN, "
             "ORACLE_USER e ORACLE_PASSWORD no .env."
         )
-    return await oracledb.connect_async(
+    conexao = await oracledb.connect_async(
         dsn=settings.oracle_dsn, user=settings.oracle_user, password=settings.oracle_password
     )
+    # O Script Generator sempre emite datas como 'DD/MM/AAAA' (Seção 13.2) — sem isso, a
+    # conversão implícita de string para DATE usa o NLS_DATE_FORMAT padrão da sessão do
+    # servidor (ex.: 'DD-MON-RR', visto em produção), e '01/11/2021' vira ORA-01843 ("not a
+    # valid month") mesmo sendo uma data perfeitamente válida no formato que geramos.
+    cursor = conexao.cursor()
+    await cursor.execute("ALTER SESSION SET NLS_DATE_FORMAT = 'DD/MM/YYYY'")
+    cursor.close()
+    return conexao

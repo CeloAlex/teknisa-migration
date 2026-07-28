@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, UploadFile
 from fastapi.responses import Response
+from openpyxl import Workbook
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -22,7 +23,8 @@ from app.db.session import get_db
 from app.migracoes import acoes
 from app.models.migracao import Migracao, MigracaoEvento, MigracaoTemplateStatus
 from app.models.organizacao import Organizacao
-from app.models.staging import ScriptGerado, StagingBruto, StagingNormalizado, ValidacaoResultado
+from app.models.staging import ExecucaoErro, ScriptGerado, StagingBruto, StagingNormalizado, ValidacaoResultado
+from app.models.template import Template
 from app.models.tipo_migracao import TipoMigracaoTemplate
 from app.validation.classificacao import Classificacao
 
@@ -53,6 +55,8 @@ def _mts_to_response(mts: MigracaoTemplateStatus) -> MigracaoTemplateStatusRespo
         script_aprovado=mts.script_aprovado,
         aplicado=mts.aplicado,
         aplicado_com_erro=mts.aplicado_com_erro,
+        detalhe_erro_aplicacao=mts.detalhe_erro_aplicacao,
+        comandos_executados_aplicacao=mts.comandos_executados_aplicacao,
     )
 
 
@@ -328,6 +332,50 @@ async def baixar_scripts_zip(migracao_id: int, db: AsyncSession = Depends(get_db
         content=buffer.getvalue(),
         media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="{nome_zip}"'},
+    )
+
+
+@router.get("/{migracao_id}/erros-execucao.xlsx")
+async def baixar_log_erros_execucao(migracao_id: int, db: AsyncSession = Depends(get_db)) -> Response:
+    """Log completo de erros de execução real no Oracle, linha a linha, de todos os
+    templates da migração — exportável para análise posterior (pedido explícito do
+    usuário), já que a Execution Engine agora prossegue até o fim do script em vez de
+    parar no primeiro erro (Seção 7.4/11)."""
+    migracao = await acoes.carregar_migracao(db, migracao_id)
+
+    stmt = (
+        select(ExecucaoErro, Template.codigo)
+        .join(MigracaoTemplateStatus, MigracaoTemplateStatus.id == ExecucaoErro.migracao_template_status_id)
+        .join(Template, Template.id == MigracaoTemplateStatus.template_id)
+        .where(MigracaoTemplateStatus.migracao_id == migracao_id)
+        .order_by(MigracaoTemplateStatus.template_id, ExecucaoErro.indice_comando)
+    )
+    linhas = (await db.execute(stmt)).all()
+    if not linhas:
+        raise acoes.AcaoInvalida("Nenhum erro de execução registrado para esta migração.", status_code=404)
+
+    workbook = Workbook()
+    planilha = workbook.active
+    planilha.title = "Erros de execução"
+    planilha.append(["Template", "Índice do comando", "Comando SQL", "Mensagem de erro", "Data/hora"])
+    for erro, template_codigo in linhas:
+        planilha.append(
+            [
+                template_codigo,
+                erro.indice_comando,
+                erro.comando_sql,
+                erro.mensagem_erro,
+                erro.dt_execucao.strftime("%d/%m/%Y %H:%M:%S") if erro.dt_execucao else "",
+            ]
+        )
+
+    buffer = io.BytesIO()
+    workbook.save(buffer)
+    nome_arquivo = f"migracao_{migracao_id}_erros_execucao.xlsx"
+    return Response(
+        content=buffer.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{nome_arquivo}"'},
     )
 
 
