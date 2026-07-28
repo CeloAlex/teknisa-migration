@@ -38,6 +38,13 @@ class ContextoExecucao:
     usuario_tecnico: str
 
 
+def _escapar_sql(valor: str) -> str:
+    """Dobra aspas simples (escape padrão SQL) — sem isso, um nome como "D'Ávila" fecha o
+    literal de string prematuramente e quebra a sintaxe do INSERT (DPY-2041/ORA-00933,
+    visto com dado real de cliente)."""
+    return valor.replace("'", "''")
+
+
 def _substituir_marcadores(
     texto: str, campos: dict[str, Any], template: TemplateMetadata, contexto: ContextoExecucao
 ) -> str:
@@ -46,9 +53,9 @@ def _substituir_marcadores(
         if not campo_meta.marcador:
             continue
         valor = campos.get(campo_meta.campo)
-        resultado = resultado.replace(campo_meta.marcador, "" if valor is None else str(valor))
+        resultado = resultado.replace(campo_meta.marcador, "" if valor is None else _escapar_sql(str(valor)))
     resultado = resultado.replace("@NRORG@", str(contexto.nr_org))
-    resultado = resultado.replace("@USUARIO_TECNICO@", contexto.usuario_tecnico)
+    resultado = resultado.replace("@USUARIO_TECNICO@", _escapar_sql(contexto.usuario_tecnico))
     return resultado
 
 

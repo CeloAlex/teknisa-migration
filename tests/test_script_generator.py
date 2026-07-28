@@ -125,6 +125,18 @@ async def test_linhas_por_commit_menor_que_um_leva_a_erro() -> None:
         )
 
 
+async def test_apostrofo_no_valor_e_escapado_para_nao_quebrar_o_literal_sql() -> None:
+    """Reproduz erro real (DPY-2041/ORA-00933) com dado de cliente: um nome como "D'Ávila"
+    sem escape fecha o literal de string prematuramente e quebra a sintaxe do INSERT."""
+    template = _template()
+    contexto = ContextoExecucao(nr_org=1410, usuario_tecnico="000000099991")
+    linhas = [{"CDBANCO": "001", "CDAGENCIA": "D'Ávila", "NRORG": 1410}]
+
+    script = await gerar_script(None, linhas, template, contexto)
+
+    assert "'001', 'D''Ávila', 1410, '000000099991'" in script
+
+
 async def test_bloco_condicional_e_pulado_quando_condicao_falsa() -> None:
     template = _template()
     template.scripts["INCLUSAO"].append(
