@@ -25,7 +25,13 @@ def create_app() -> FastAPI:
         description="Motor genérico de migração orientado por metadados — upload, validação, geração de SQL, aprovação e aplicação.",
         version="0.1.0",
     )
-    app.add_middleware(SessionMiddleware, secret_key=get_settings().secret_key, same_site="lax")
+    settings = get_settings()
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=settings.secret_key,
+        same_site="lax",
+        https_only=settings.environment == "production",
+    )
 
     @app.middleware("http")
     async def _sem_cache_paginas_dinamicas(request: Request, call_next):

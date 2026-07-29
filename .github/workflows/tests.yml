@@ -1,0 +1,43 @@
+name: Tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: migracao_app
+          POSTGRES_PASSWORD: changeme
+          POSTGRES_DB: migracao_platform
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U migracao_app"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+asyncpg://migracao_app:changeme@localhost:5432/migracao_platform
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Instalar dependências
+        run: uv sync --frozen
+
+      - name: Rodar migrações (schema + seed do dicionário de dados)
+        run: uv run alembic upgrade head
+
+      - name: Rodar suíte de testes
+        run: uv run pytest -q

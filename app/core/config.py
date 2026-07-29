@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,6 +13,18 @@ class Settings(BaseSettings):
 
     # Banco de staging/controle da plataforma (PostgreSQL).
     database_url: str = "postgresql+asyncpg://migracao_app:changeme@localhost:5432/migracao_platform"
+
+    @field_validator("database_url")
+    @classmethod
+    def _forcar_driver_asyncpg(cls, valor: str) -> str:
+        """O plugin de Postgres do Railway (e o Heroku) injeta `DATABASE_URL` como
+        `postgres://...`/`postgresql://...`, sem driver — o SQLAlchemy async engine exige
+        `postgresql+asyncpg://`. Normaliza aqui em vez de depender de configuração manual
+        correta em cada ambiente."""
+        for prefixo in ("postgres://", "postgresql://"):
+            if valor.startswith(prefixo):
+                return "postgresql+asyncpg://" + valor[len(prefixo):]
+        return valor
 
     # Identificador do usuário técnico de migração (Seção 13.3) — hoje hardcoded como
     # '000000099991' em todos os templates SQL das planilhas; aqui é configurável por
