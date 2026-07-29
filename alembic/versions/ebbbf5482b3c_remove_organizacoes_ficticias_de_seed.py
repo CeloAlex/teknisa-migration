@@ -32,9 +32,16 @@ ORGANIZACOES = [
 
 
 def upgrade() -> None:
+    # NOT EXISTS: em ambientes de dev/teste que já rodaram migrações reais contra uma
+    # dessas organizações, apagar a organização violaria a FK de `migracao.nr_org`. Nesse
+    # caso, pula essa organização em vez de falhar — o objetivo é limpar dado fictício, não
+    # derrubar dado real já criado localmente.
     conn = op.get_bind()
     conn.execute(
-        sa.text("DELETE FROM organizacao WHERE nr_org = ANY(:nr_orgs)"),
+        sa.text(
+            "DELETE FROM organizacao WHERE nr_org = ANY(:nr_orgs) "
+            "AND NOT EXISTS (SELECT 1 FROM migracao m WHERE m.nr_org = organizacao.nr_org)"
+        ),
         {"nr_orgs": [nr_org for nr_org, _ in ORGANIZACOES]},
     )
 

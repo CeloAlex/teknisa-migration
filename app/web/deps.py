@@ -20,6 +20,17 @@ class SemPermissao(Exception):
         super().__init__(mensagem)
 
 
+class SenhaTrocaObrigatoria(Exception):
+    """Levantada quando o usuário logado precisa trocar a senha (definida por outra pessoa)
+    antes de acessar qualquer outra tela — o handler em app/main.py redireciona para
+    /portal-migration/trocar-senha."""
+
+
+# Rotas que continuam acessíveis mesmo com deve_trocar_senha=True: a própria tela de troca
+# (senão o usuário nunca conseguiria sair de lá) e o logout.
+CAMINHOS_ISENTOS_TROCA_SENHA = {"/portal-migration/trocar-senha", "/portal-migration/logout"}
+
+
 async def usuario_logado(request: Request, db: AsyncSession = Depends(get_db)) -> Usuario | None:
     usuario_id = request.session.get("usuario_id")
     if usuario_id is None:
@@ -30,9 +41,11 @@ async def usuario_logado(request: Request, db: AsyncSession = Depends(get_db)) -
     return usuario
 
 
-async def exigir_login(usuario: Usuario | None = Depends(usuario_logado)) -> Usuario:
+async def exigir_login(request: Request, usuario: Usuario | None = Depends(usuario_logado)) -> Usuario:
     if usuario is None:
         raise NaoAutenticado()
+    if usuario.deve_trocar_senha and request.url.path not in CAMINHOS_ISENTOS_TROCA_SENHA:
+        raise SenhaTrocaObrigatoria()
     return usuario
 
 

@@ -83,6 +83,7 @@ async def criar(
         papel=papel,
         nr_org=None if papel in PAPEIS_SEM_ORGANIZACAO else nr_org,
         senha_hash=hash_senha(senha),
+        deve_trocar_senha=True,
     )
     db.add(novo)
     return RedirectResponse(url="/portal-migration/admin/operadores", status_code=303)
@@ -142,6 +143,7 @@ async def editar(
     alvo.nr_org = None if papel in PAPEIS_SEM_ORGANIZACAO else nr_org
     if senha:
         alvo.senha_hash = hash_senha(senha)
+        alvo.deve_trocar_senha = True
     return RedirectResponse(url="/portal-migration/admin/operadores", status_code=303)
 
 

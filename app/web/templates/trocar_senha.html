@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trocar senha — Plataforma de Migração de Dados</title>
+  <link rel="stylesheet" href="/portal-migration/static/css/app.css?v={{ static_version('css/app.css') }}">
+</head>
+<body class="login-body">
+<div class="login-wrap">
+  <div class="login-decor" aria-hidden="true">
+    <span class="dot blue"></span>
+    <span class="dot green"></span>
+    <span class="dot gold"></span>
+  </div>
+  <div class="card login-card">
+    <img class="login-logo" src="/portal-migration/static/images/logo-teknisa.png" alt="Teknisa">
+    <h2>Troca de senha obrigatória</h2>
+    <div class="desc">
+      Sua senha foi definida por um administrador. Antes de continuar, defina uma senha
+      só sua.
+    </div>
+    {% if erro %}<div class="flash erro">{{ erro }}</div>{% endif %}
+    <form method="post" action="/portal-migration/trocar-senha">
+      <div class="field">
+        <label for="senha_atual">Senha atual</label>
+        <input type="password" id="senha_atual" name="senha_atual" required autofocus>
+      </div>
+      <div class="field">
+        <label for="nova_senha">Nova senha</label>
+        <input type="password" id="nova_senha" name="nova_senha" required minlength="8">
+      </div>
+      <div class="field">
+        <label for="confirmar_senha">Confirmar nova senha</label>
+        <input type="password" id="confirmar_senha" name="confirmar_senha" required minlength="8">
+      </div>
+      <div class="btnbar">
+        <button class="btn" type="submit">Trocar senha e continuar</button>
+      </div>
+    </form>
+  </div>
+</div>
+</body>
+</html>

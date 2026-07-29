@@ -6,7 +6,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.api.routes import health, migracoes, templates, tipos_migracao
 from app.core.config import get_settings
 from app.migracoes.acoes import AcaoInvalida
-from app.web.deps import NaoAutenticado, SemPermissao
+from app.web.deps import NaoAutenticado, SemPermissao, SenhaTrocaObrigatoria
 from app.web.routes import auth as web_auth
 from app.web.routes import dashboard as web_dashboard
 from app.web.routes import migracao as web_migracao
@@ -15,6 +15,7 @@ from app.web.routes import operadores as web_operadores
 from app.web.routes import organizacoes as web_organizacoes
 from app.web.routes import templates_admin as web_templates_admin
 from app.web.routes import tipos_migracao_admin as web_tipos_migracao_admin
+from app.web.routes import trocar_senha as web_trocar_senha
 from app.web.templates_env import BASE_DIR as WEB_BASE_DIR
 from app.web.templates_env import templates as web_templates
 
@@ -60,6 +61,7 @@ def create_app() -> FastAPI:
     app.include_router(web_templates_admin.router)
     app.include_router(web_templates_admin.router_catalogo)
     app.include_router(web_tipos_migracao_admin.router)
+    app.include_router(web_trocar_senha.router)
     app.mount("/portal-migration/static", StaticFiles(directory=str(WEB_BASE_DIR / "static")), name="portal-static")
 
     @app.exception_handler(AcaoInvalida)
@@ -78,6 +80,10 @@ def create_app() -> FastAPI:
     @app.exception_handler(SemPermissao)
     async def _sem_permissao(request: Request, exc: SemPermissao):
         return web_templates.TemplateResponse(request, "errors/403.html", {"mensagem": exc.mensagem}, status_code=403)
+
+    @app.exception_handler(SenhaTrocaObrigatoria)
+    async def _senha_troca_obrigatoria(request: Request, exc: SenhaTrocaObrigatoria) -> RedirectResponse:
+        return RedirectResponse(url="/portal-migration/trocar-senha", status_code=303)
 
     return app
 

@@ -38,3 +38,6 @@ class Usuario(Base):
     ativo: Mapped[bool] = mapped_column(Boolean, default=True)
     senha_hash: Mapped[str] = mapped_column(String(200))
     dt_criacao: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # True quando a senha atual foi definida por outra pessoa (admin cria operador ou reseta
+    # senha) — força a troca no próximo acesso antes de liberar qualquer outra tela.
+    deve_trocar_senha: Mapped[bool] = mapped_column(Boolean, default=False)
