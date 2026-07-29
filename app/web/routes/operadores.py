@@ -62,6 +62,7 @@ async def criar(
     existente = (await db.execute(select(Usuario).where(Usuario.email == email))).scalar_one_or_none()
     if existente is not None:
         organizacoes = await _organizacoes_ativas(db)
+        valores = {"nome": nome, "email": email, "cargo": cargo, "papel": papel, "nr_org": nr_org}
         return templates.TemplateResponse(
             request,
             "operadores/form.html",
@@ -69,6 +70,7 @@ async def criar(
                 "usuario": usuario,
                 "organizacoes": organizacoes,
                 "operador": None,
+                "valores": valores,
                 "erro": f'Já existe um operador com o e-mail "{email}".',
             },
             status_code=400,
@@ -119,6 +121,7 @@ async def editar(
     ).scalar_one_or_none()
     if duplicado is not None:
         organizacoes = await _organizacoes_ativas(db)
+        valores = {"nome": nome, "email": email, "cargo": cargo, "papel": papel, "nr_org": nr_org}
         return templates.TemplateResponse(
             request,
             "operadores/form.html",
@@ -126,6 +129,7 @@ async def editar(
                 "usuario": usuario,
                 "organizacoes": organizacoes,
                 "operador": alvo,
+                "valores": valores,
                 "erro": f'Já existe um operador com o e-mail "{email}".',
             },
             status_code=400,

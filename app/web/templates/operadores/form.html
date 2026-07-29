@@ -4,25 +4,26 @@
 <div class="card">
   <h2>{{ "Editar operador" if operador else "Novo operador" }}</h2>
   {% if erro %}<div class="flash erro">{{ erro }}</div>{% endif %}
+  {% set d = valores if valores is defined else operador %}
   <form method="post" action="{{ '/portal-migration/admin/operadores/' ~ operador.id ~ '/editar' if operador else '/portal-migration/admin/operadores/novo' }}">
     <div class="grid2">
       <div class="field">
         <label for="nome">Nome</label>
-        <input type="text" id="nome" name="nome" value="{{ operador.nome if operador else '' }}" required>
+        <input type="text" id="nome" name="nome" value="{{ d.nome if d else '' }}" required>
       </div>
       <div class="field">
         <label for="email">E-mail</label>
-        <input type="email" id="email" name="email" value="{{ operador.email if operador else '' }}" required>
+        <input type="email" id="email" name="email" value="{{ d.email if d else '' }}" required>
       </div>
       <div class="field">
         <label for="cargo">Cargo</label>
-        <input type="text" id="cargo" name="cargo" value="{{ operador.cargo if operador else '' }}">
+        <input type="text" id="cargo" name="cargo" value="{{ d.cargo if d else '' }}">
       </div>
       <div class="field">
         <label for="papel">Papel</label>
         <select id="papel" name="papel" required>
           {% for valor, rotulo in papel_opcoes %}
-          <option value="{{ valor }}" {% if operador and operador.papel == valor %}selected{% endif %}>{{ rotulo }}</option>
+          <option value="{{ valor }}" {% if d and d.papel == valor %}selected{% endif %}>{{ rotulo }}</option>
           {% endfor %}
         </select>
       </div>
@@ -30,7 +31,7 @@
         <label for="nr_org">Organização</label>
         <select id="nr_org" name="nr_org">
           {% for org in organizacoes %}
-          <option value="{{ org.nr_org }}" {% if operador and operador.nr_org == org.nr_org %}selected{% endif %}>{{ org.nome }}</option>
+          <option value="{{ org.nr_org }}" {% if d and d.nr_org == org.nr_org %}selected{% endif %}>{{ org.nome }}</option>
           {% endfor %}
         </select>
       </div>
