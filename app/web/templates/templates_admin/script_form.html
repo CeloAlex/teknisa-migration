@@ -23,7 +23,7 @@
       </div>
       <div class="field">
         <label for="condicao_campo">Campo de condição (bloco condicional, opcional)</label>
-        <input type="text" id="condicao_campo" name="condicao_campo" value="{{ script.condicao_campo if script else '' }}">
+        <input type="text" id="condicao_campo" name="condicao_campo" value="{{ script.condicao_campo if (script and script.condicao_campo is not none) else '' }}">
       </div>
     </div>
     <div class="field">
@@ -32,7 +32,7 @@
     </div>
     <div class="field">
       <label for="template_rollback">Template de rollback (opcional)</label>
-      <textarea id="template_rollback" name="template_rollback" rows="6">{{ script.template_rollback if script else '' }}</textarea>
+      <textarea id="template_rollback" name="template_rollback" rows="6">{{ script.template_rollback if (script and script.template_rollback is not none) else '' }}</textarea>
     </div>
     <div class="btnbar">
       <a class="btn secondary" href="/portal-migration/admin/templates/{{ codigo }}">Cancelar</a>

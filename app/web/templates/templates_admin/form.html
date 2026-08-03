@@ -20,7 +20,12 @@
       </div>
       <div class="field">
         <label for="formatos_aceitos">Formatos aceitos (separados por vírgula)</label>
-        <input type="text" id="formatos_aceitos" name="formatos_aceitos" value="XLSX">
+        <input type="text" id="formatos_aceitos" name="formatos_aceitos" value="XLSX" list="formatos_lista">
+        <datalist id="formatos_lista">
+          {% for f in (formatos_conhecidos or []) %}
+          <option value="{{ f }}"></option>
+          {% endfor %}
+        </datalist>
       </div>
       <div class="field">
         <label for="sheet_name">Nome da planilha (sheet)</label>

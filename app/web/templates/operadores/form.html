@@ -17,7 +17,7 @@
       </div>
       <div class="field">
         <label for="cargo">Cargo</label>
-        <input type="text" id="cargo" name="cargo" value="{{ d.cargo if d else '' }}">
+        <input type="text" id="cargo" name="cargo" value="{{ d.cargo if (d and d.cargo is not none) else '' }}">
       </div>
       <div class="field">
         <label for="papel">Papel</label>

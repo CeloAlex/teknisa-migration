@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -9,6 +9,7 @@ from app.metadata.ddl_import import parse_ddl_oracle
 from app.models.catalogo_destino import CatalogoColuna, CatalogoTabela
 from app.models.template import Template, TemplateCampo, TemplateScript
 from app.models.usuario import Papel, Usuario
+from app.transformation.conversions import CONVERSOES
 from app.web.deps import exigir_papel
 from app.web.templates_env import templates
 
@@ -29,6 +30,33 @@ async def _carregar_template(db: AsyncSession, codigo: str) -> Template | None:
     return (await db.execute(stmt)).scalar_one_or_none()
 
 
+async def _formatos_conhecidos(db: AsyncSession) -> list[str]:
+    """Valores individuais de `formatos_aceitos` já usados em algum template, para
+    autocomplete no formulário de criação — o campo aceita uma lista separada por vírgula,
+    então sugerimos os tokens conhecidos em vez da combinação completa."""
+    subq = select(func.unnest(Template.formatos_aceitos).label("formato")).subquery()
+    stmt = select(subq.c.formato).distinct().order_by(subq.c.formato)
+    return [linha[0] for linha in (await db.execute(stmt)).all()]
+
+
+async def _valores_distintos_campo(db: AsyncSession, coluna) -> list[str]:
+    """Valores distintos e não vazios de uma coluna de `TemplateCampo`, para autocomplete —
+    reúne o que já foi digitado em outros templates/campos do dicionário de dados."""
+    stmt = select(coluna).where(coluna.is_not(None), coluna != "").distinct().order_by(coluna)
+    return [linha[0] for linha in (await db.execute(stmt)).all()]
+
+
+async def _sugestoes_campo(db: AsyncSession) -> dict[str, list[str]]:
+    tipos = await _valores_distintos_campo(db, TemplateCampo.tipo)
+    valores_padrao = await _valores_distintos_campo(db, TemplateCampo.valor_padrao)
+    regras_db = await _valores_distintos_campo(db, TemplateCampo.regra_conversao)
+    # Une com o registro de conversões válidas (`CONVERSOES`) — a lista de campos já
+    # preenchidos pode não cobrir toda regra existente, e uma regra que não está em
+    # `CONVERSOES` é ignorada silenciosamente por `aplicar_conversao`.
+    regras_conversao = sorted(set(CONVERSOES.keys()) | set(regras_db))
+    return {"tipos": tipos, "valores_padrao": valores_padrao, "regras_conversao": regras_conversao}
+
+
 @router.get("")
 async def listar(
     request: Request,
@@ -40,8 +68,16 @@ async def listar(
 
 
 @router.get("/novo")
-async def form_novo(request: Request, usuario: Usuario = Depends(exigir_papel(Papel.ADMINISTRADOR))):
-    return templates.TemplateResponse(request, "templates_admin/form.html", {"usuario": usuario})
+async def form_novo(
+    request: Request,
+    usuario: Usuario = Depends(exigir_papel(Papel.ADMINISTRADOR)),
+    db: AsyncSession = Depends(get_db),
+):
+    return templates.TemplateResponse(
+        request,
+        "templates_admin/form.html",
+        {"usuario": usuario, "formatos_conhecidos": await _formatos_conhecidos(db)},
+    )
 
 
 @router.post("/novo")
@@ -118,7 +154,13 @@ async def form_novo_campo(
     return templates.TemplateResponse(
         request,
         "templates_admin/campo_form.html",
-        {"usuario": usuario, "codigo": codigo, "campo": None, "catalogo_tabelas": catalogo_tabelas},
+        {
+            "usuario": usuario,
+            "codigo": codigo,
+            "campo": None,
+            "catalogo_tabelas": catalogo_tabelas,
+            **(await _sugestoes_campo(db)),
+        },
     )
 
 
@@ -186,7 +228,13 @@ async def form_editar_campo(
     return templates.TemplateResponse(
         request,
         "templates_admin/campo_form.html",
-        {"usuario": usuario, "codigo": codigo, "campo": campo, "catalogo_tabelas": catalogo_tabelas},
+        {
+            "usuario": usuario,
+            "codigo": codigo,
+            "campo": campo,
+            "catalogo_tabelas": catalogo_tabelas,
+            **(await _sugestoes_campo(db)),
+        },
     )
 
 

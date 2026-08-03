@@ -23,7 +23,7 @@
       </div>
       <div class="field">
         <label for="marcador">Marcador @CAMPO@</label>
-        <input type="text" id="marcador" name="marcador" value="{{ campo.marcador if campo else '' }}">
+        <input type="text" id="marcador" name="marcador" value="{{ campo.marcador if (campo and campo.marcador is not none) else '' }}">
       </div>
       <div class="field">
         <label for="catalogo_tabela">Tabela destino (catálogo importado)</label>
@@ -50,32 +50,47 @@
       </div>
       <div class="field">
         <label for="tipo">Tipo</label>
-        <input type="text" id="tipo" name="tipo" value="{{ campo.tipo if campo else '' }}" required>
+        <input type="text" id="tipo" name="tipo" value="{{ campo.tipo if campo else '' }}" required list="tipos_lista">
+        <datalist id="tipos_lista">
+          {% for t in (tipos or []) %}
+          <option value="{{ t }}"></option>
+          {% endfor %}
+        </datalist>
       </div>
       <div class="field">
         <label for="tamanho_maximo">Tamanho máximo</label>
-        <input type="number" id="tamanho_maximo" name="tamanho_maximo" value="{{ campo.tamanho_maximo if campo else '' }}">
+        <input type="number" id="tamanho_maximo" name="tamanho_maximo" value="{{ campo.tamanho_maximo if (campo and campo.tamanho_maximo is not none) else '' }}">
       </div>
       <div class="field">
         <label for="valor_padrao">Valor padrão</label>
-        <input type="text" id="valor_padrao" name="valor_padrao" value="{{ campo.valor_padrao if campo else '' }}">
+        <input type="text" id="valor_padrao" name="valor_padrao" value="{{ campo.valor_padrao if (campo and campo.valor_padrao is not none) else '' }}" list="valores_padrao_lista">
+        <datalist id="valores_padrao_lista">
+          {% for v in (valores_padrao or []) %}
+          <option value="{{ v }}"></option>
+          {% endfor %}
+        </datalist>
       </div>
       <div class="field">
         <label for="regra_conversao">Regra de conversão</label>
-        <input type="text" id="regra_conversao" name="regra_conversao" value="{{ campo.regra_conversao if campo else '' }}">
+        <input type="text" id="regra_conversao" name="regra_conversao" value="{{ campo.regra_conversao if (campo and campo.regra_conversao is not none) else '' }}" list="regras_conversao_lista">
+        <datalist id="regras_conversao_lista">
+          {% for r in (regras_conversao or []) %}
+          <option value="{{ r }}"></option>
+          {% endfor %}
+        </datalist>
       </div>
       <div class="field">
         <label for="gerador_pk_contador">Contador do gerador de PK</label>
-        <input type="text" id="gerador_pk_contador" name="gerador_pk_contador" value="{{ campo.gerador_pk_contador if campo else '' }}">
+        <input type="text" id="gerador_pk_contador" name="gerador_pk_contador" value="{{ campo.gerador_pk_contador if (campo and campo.gerador_pk_contador is not none) else '' }}">
       </div>
       <div class="field">
         <label for="gerador_pk_seed">Semente do gerador de PK</label>
-        <input type="number" id="gerador_pk_seed" name="gerador_pk_seed" value="{{ campo.gerador_pk_seed if campo else '' }}">
+        <input type="number" id="gerador_pk_seed" name="gerador_pk_seed" value="{{ campo.gerador_pk_seed if (campo and campo.gerador_pk_seed is not none) else '' }}">
       </div>
     </div>
     <div class="field">
       <label for="regra_validacao">Regra de validação (opcional)</label>
-      <textarea id="regra_validacao" name="regra_validacao">{{ campo.regra_validacao if campo else '' }}</textarea>
+      <textarea id="regra_validacao" name="regra_validacao">{{ campo.regra_validacao if (campo and campo.regra_validacao is not none) else '' }}</textarea>
     </div>
     <div class="checkline">
       <input type="checkbox" id="obrigatorio" name="obrigatorio" value="true" {% if campo and campo.obrigatorio %}checked{% endif %}>
