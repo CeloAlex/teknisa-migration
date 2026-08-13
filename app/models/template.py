@@ -87,6 +87,24 @@ class TemplateCampo(Base):
     # NULL na aplicação real (ex.: código de Estrutura com typo entre dois uploads).
     fk_template_codigo: Mapped[str | None] = mapped_column(String(50))
     fk_campo: Mapped[str | None] = mapped_column(String(100))
+    # Validação de domínio (Seção 7.3): lista de valores aceitos, separada por vírgula.
+    # Quando preenchido e o campo não está vazio, um valor fora da lista vira alerta (não
+    # bloqueia) — o domínio de negócio às vezes cresce por organização (ex.: tipo de
+    # estrutura), então isto é feedback pro operador resolver, não uma trava rígida.
+    dominio_valores: Mapped[str | None] = mapped_column(Text)
+    # Duplicidade dentro do mesmo lote importado: "erro_impeditivo" ou "alerta". Quando
+    # preenchido, valores repetidos deste campo entre linhas do mesmo template/migração geram
+    # esse resultado em cada linha duplicada (ver `verificar_duplicatas_lote`).
+    duplicata_no_lote: Mapped[str | None] = mapped_column(String(20))
+    # Opcional: nome de outro `campo` do mesmo template. Quando presente, duas linhas só
+    # contam como duplicata se também compartilharem o valor deste campo (ex.: CNPJ
+    # duplicado só é alerta entre estruturas do mesmo NRTPESTRUTURA).
+    duplicata_agrupado_por: Mapped[str | None] = mapped_column(String(100))
+    # Obrigatoriedade condicional, classificada como alerta (não erro): quando este campo
+    # está vazio E o valor do campo `alerta_se_vazio_quando_campo` está entre os valores
+    # (separados por vírgula) de `alerta_se_vazio_quando_valores`, gera alerta de ausência.
+    alerta_se_vazio_quando_campo: Mapped[str | None] = mapped_column(String(100))
+    alerta_se_vazio_quando_valores: Mapped[str | None] = mapped_column(String(300))
 
     template: Mapped["Template"] = relationship(back_populates="campos")
 

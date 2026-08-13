@@ -39,6 +39,10 @@
         <label for="senha">{{ "Nova senha (deixe em branco para manter)" if operador else "Senha" }}</label>
         <input type="password" id="senha" name="senha" {% if not operador %}required{% endif %} minlength="8">
       </div>
+      <div class="field">
+        <label for="cdoperador">Código do Operador no HCM (CDOPERADOR) — opcional</label>
+        <input type="text" id="cdoperador" name="cdoperador" maxlength="12" value="{{ d.cdoperador if (d and d.cdoperador is not none) else '' }}">
+      </div>
     </div>
     <div class="btnbar">
       <a class="btn secondary" href="/portal-migration/admin/operadores">Cancelar</a>

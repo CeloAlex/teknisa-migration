@@ -47,6 +47,11 @@ async def resolver_template(session: AsyncSession, codigo: str) -> TemplateMetad
             gerador_pk_seed=c.gerador_pk_seed,
             fk_template_codigo=c.fk_template_codigo,
             fk_campo=c.fk_campo,
+            dominio_valores=c.dominio_valores,
+            duplicata_no_lote=c.duplicata_no_lote,
+            duplicata_agrupado_por=c.duplicata_agrupado_por,
+            alerta_se_vazio_quando_campo=c.alerta_se_vazio_quando_campo,
+            alerta_se_vazio_quando_valores=c.alerta_se_vazio_quando_valores,
         )
         for c in template.campos
     ]

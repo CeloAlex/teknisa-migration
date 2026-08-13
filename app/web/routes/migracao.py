@@ -309,7 +309,7 @@ async def gerar_script(
 ):
     migracao, mts = await _carregar_com_mts(db, migracao_id, codigo, usuario)
     try:
-        await acoes.gerar_script(db, migracao, mts, usuario.nome, operacao, linhas_por_commit)
+        await acoes.gerar_script(db, migracao, mts, usuario.nome, operacao, linhas_por_commit, cdoperador=usuario.cdoperador)
     except AcaoInvalida as exc:
         _flash_erro(request, exc.mensagem)
     return _redirect_aba(migracao_id, "scripts")

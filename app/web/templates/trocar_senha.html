@@ -34,6 +34,10 @@
         <label for="confirmar_senha">Confirmar nova senha</label>
         <input type="password" id="confirmar_senha" name="confirmar_senha" required minlength="8">
       </div>
+      <div class="field">
+        <label for="cdoperador">Código do Operador no HCM (CDOPERADOR) — opcional</label>
+        <input type="text" id="cdoperador" name="cdoperador" maxlength="12" value="{{ usuario.cdoperador or '' }}">
+      </div>
       <div class="btnbar">
         <button class="btn" type="submit">Trocar senha e continuar</button>
       </div>

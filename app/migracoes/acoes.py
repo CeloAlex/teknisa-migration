@@ -356,6 +356,7 @@ async def gerar_script(
     usuario: str,
     operacao: str = "INCLUSAO",
     linhas_por_commit: int = 1,
+    cdoperador: str | None = None,
 ) -> None:
     if not mts.dados_aprovados:
         raise AcaoInvalida("Aprove os dados deste template antes de gerar o script.")
@@ -377,7 +378,10 @@ async def gerar_script(
         raise AcaoInvalida("linhas_por_commit deve ser pelo menos 1.", status_code=422)
 
     settings = get_settings()
-    contexto = ContextoExecucao(nr_org=migracao.nr_org, usuario_tecnico=settings.usuario_tecnico_padrao)
+    # CDOPERADOR do operador logado (Usuario.cdoperador) rastreia no Oracle quem de fato
+    # gerou o script — cai no usuário técnico fixo enquanto o operador não tiver completado
+    # esse cadastro (feedback do piloto NUTRIBEM-TOTAL).
+    contexto = ContextoExecucao(nr_org=migracao.nr_org, usuario_tecnico=cdoperador or settings.usuario_tecnico_padrao)
     try:
         sql = await _gerar_script_sql(
             db, linhas_validas, template_meta, contexto, operacao=operacao, linhas_por_commit=linhas_por_commit

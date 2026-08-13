@@ -22,6 +22,7 @@ async def trocar_senha(
     senha_atual: str = Form(...),
     nova_senha: str = Form(...),
     confirmar_senha: str = Form(...),
+    cdoperador: str = Form(""),
     usuario: Usuario = Depends(exigir_login),
     db: AsyncSession = Depends(get_db),
 ):
@@ -49,4 +50,5 @@ async def trocar_senha(
 
     usuario.senha_hash = hash_senha(nova_senha)
     usuario.deve_trocar_senha = False
+    usuario.cdoperador = cdoperador.strip() or usuario.cdoperador
     return RedirectResponse(url="/portal-migration/", status_code=303)

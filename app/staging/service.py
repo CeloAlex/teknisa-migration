@@ -16,7 +16,7 @@ from app.models.staging import ScriptGerado, StagingBruto, StagingNormalizado, V
 from app.models.template import Template
 from app.transformation.engine import aplicar_transformacoes
 from app.validation.classificacao import Classificacao
-from app.validation.engine import validar_linha
+from app.validation.engine import validar_linha, verificar_duplicatas_lote
 
 
 def _json_seguro(valor: Any) -> Any:
@@ -116,11 +116,16 @@ async def _executar_validacao(session: AsyncSession, mts: MigracaoTemplateStatus
     )
     normalizados = (await session.execute(stmt)).scalars().all()
     valores_fk = await _buscar_valores_fk(session, mts.migracao_id, template_meta)
+    duplicatas = verificar_duplicatas_lote(
+        [(s.id, s.dados_json) for s in normalizados], template_meta
+    )
 
     tem_erro = False
     tem_alerta = False
     for staging_normalizado in normalizados:
-        for resultado in validar_linha(staging_normalizado.dados_json, template_meta, valores_fk):
+        resultados = validar_linha(staging_normalizado.dados_json, template_meta, valores_fk)
+        resultados += duplicatas.get(staging_normalizado.id, [])
+        for resultado in resultados:
             session.add(
                 ValidacaoResultado(
                     staging_normalizado_id=staging_normalizado.id,

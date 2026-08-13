@@ -29,6 +29,13 @@ class CampoMetadata:
     # `fk_template_codigo`, dentro da MESMA migração (ver `app/validation/engine.py`).
     fk_template_codigo: str | None = None
     fk_campo: str | None = None
+    # Validação de domínio, duplicidade em lote e ausência condicional (Seção 7.3) — ver
+    # `app/models/template.py::TemplateCampo` para a semântica completa de cada um.
+    dominio_valores: str | None = None
+    duplicata_no_lote: str | None = None
+    duplicata_agrupado_por: str | None = None
+    alerta_se_vazio_quando_campo: str | None = None
+    alerta_se_vazio_quando_valores: str | None = None
 
     @property
     def vem_do_contexto(self) -> bool:

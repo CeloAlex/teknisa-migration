@@ -56,13 +56,17 @@ async def criar(
     papel: str = Form(...),
     nr_org: int | None = Form(None),
     senha: str = Form(...),
+    cdoperador: str = Form(""),
     usuario: Usuario = Depends(exigir_papel(Papel.ADMINISTRADOR)),
     db: AsyncSession = Depends(get_db),
 ):
     existente = (await db.execute(select(Usuario).where(Usuario.email == email))).scalar_one_or_none()
     if existente is not None:
         organizacoes = await _organizacoes_ativas(db)
-        valores = {"nome": nome, "email": email, "cargo": cargo, "papel": papel, "nr_org": nr_org}
+        valores = {
+            "nome": nome, "email": email, "cargo": cargo, "papel": papel, "nr_org": nr_org,
+            "cdoperador": cdoperador,
+        }
         return templates.TemplateResponse(
             request,
             "operadores/form.html",
@@ -84,6 +88,7 @@ async def criar(
         nr_org=None if papel in PAPEIS_SEM_ORGANIZACAO else nr_org,
         senha_hash=hash_senha(senha),
         deve_trocar_senha=True,
+        cdoperador=cdoperador.strip() or None,
     )
     db.add(novo)
     return RedirectResponse(url="/portal-migration/admin/operadores", status_code=303)
@@ -113,6 +118,7 @@ async def editar(
     papel: str = Form(...),
     nr_org: int | None = Form(None),
     senha: str = Form(""),
+    cdoperador: str = Form(""),
     usuario: Usuario = Depends(exigir_papel(Papel.ADMINISTRADOR)),
     db: AsyncSession = Depends(get_db),
 ):
@@ -122,7 +128,10 @@ async def editar(
     ).scalar_one_or_none()
     if duplicado is not None:
         organizacoes = await _organizacoes_ativas(db)
-        valores = {"nome": nome, "email": email, "cargo": cargo, "papel": papel, "nr_org": nr_org}
+        valores = {
+            "nome": nome, "email": email, "cargo": cargo, "papel": papel, "nr_org": nr_org,
+            "cdoperador": cdoperador,
+        }
         return templates.TemplateResponse(
             request,
             "operadores/form.html",
@@ -141,6 +150,7 @@ async def editar(
     alvo.cargo = cargo or None
     alvo.papel = papel
     alvo.nr_org = None if papel in PAPEIS_SEM_ORGANIZACAO else nr_org
+    alvo.cdoperador = cdoperador.strip() or None
     if senha:
         alvo.senha_hash = hash_senha(senha)
         alvo.deve_trocar_senha = True

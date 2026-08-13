@@ -41,3 +41,9 @@ class Usuario(Base):
     # True quando a senha atual foi definida por outra pessoa (admin cria operador ou reseta
     # senha) — força a troca no próximo acesso antes de liberar qualquer outra tela.
     deve_trocar_senha: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Código do operador no HCM (CDOPERADOR/CDOPERINCLUSAO/CDOPERULTATU, VARCHAR2(12) no
+    # Oracle de destino) — rastreia quem de fato gerou cada script, no lugar do usuário
+    # técnico fixo (feedback do piloto NUTRIBEM-TOTAL). Preenchido pelo próprio operador ao
+    # completar o cadastro (Seção 3.3); nulo até lá, e o gerador de script cai no fallback
+    # `settings.usuario_tecnico_padrao` enquanto estiver vazio.
+    cdoperador: Mapped[str | None] = mapped_column(String(12))
