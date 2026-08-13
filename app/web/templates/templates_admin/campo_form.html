@@ -92,6 +92,42 @@
       <label for="regra_validacao">Regra de validação (opcional)</label>
       <textarea id="regra_validacao" name="regra_validacao">{{ campo.regra_validacao if (campo and campo.regra_validacao is not none) else '' }}</textarea>
     </div>
+
+    <h3>Validações avançadas (Seção 7.3 — domínio, duplicidade, ausência condicional)</h3>
+    <div class="grid3">
+      <div class="field">
+        <label for="dominio_valores">Domínio de valores (separados por vírgula)</label>
+        <textarea id="dominio_valores" name="dominio_valores" placeholder="ex.: 1,2,3,4,5,6,7">{{ campo.dominio_valores if (campo and campo.dominio_valores is not none) else '' }}</textarea>
+        <small>Valor fora da lista gera alerta (não bloqueia). Deixe em branco pra não validar domínio.</small>
+      </div>
+      <div class="field">
+        <label for="duplicata_no_lote">Duplicidade dentro do mesmo arquivo importado</label>
+        <select id="duplicata_no_lote" name="duplicata_no_lote">
+          <option value="" {% if not (campo and campo.duplicata_no_lote) %}selected{% endif %}>— não verificar —</option>
+          <option value="alerta" {% if campo and campo.duplicata_no_lote == 'alerta' %}selected{% endif %}>Alerta (não bloqueia)</option>
+          <option value="erro_impeditivo" {% if campo and campo.duplicata_no_lote == 'erro_impeditivo' %}selected{% endif %}>Erro impeditivo (rejeita a linha)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="duplicata_agrupado_por">Duplicidade só conta com o mesmo valor de (opcional)</label>
+        <input type="text" id="duplicata_agrupado_por" name="duplicata_agrupado_por" value="{{ campo.duplicata_agrupado_por if (campo and campo.duplicata_agrupado_por is not none) else '' }}" list="nomes_campos_lista">
+        <small>Nome de outro campo deste dicionário (ex.: CNPJ duplicado só é alerta entre linhas do mesmo NRTPESTRUTURA).</small>
+      </div>
+      <div class="field">
+        <label for="alerta_se_vazio_quando_campo">Alertar se este campo estiver vazio quando o campo</label>
+        <input type="text" id="alerta_se_vazio_quando_campo" name="alerta_se_vazio_quando_campo" value="{{ campo.alerta_se_vazio_quando_campo if (campo and campo.alerta_se_vazio_quando_campo is not none) else '' }}" list="nomes_campos_lista">
+      </div>
+      <div class="field">
+        <label for="alerta_se_vazio_quando_valores">tiver um destes valores (separados por vírgula)</label>
+        <input type="text" id="alerta_se_vazio_quando_valores" name="alerta_se_vazio_quando_valores" value="{{ campo.alerta_se_vazio_quando_valores if (campo and campo.alerta_se_vazio_quando_valores is not none) else '' }}" placeholder="ex.: 1,2,20">
+      </div>
+    </div>
+    <datalist id="nomes_campos_lista">
+      {% for n in (nomes_campos or []) %}
+      <option value="{{ n }}"></option>
+      {% endfor %}
+    </datalist>
+
     <div class="checkline">
       <input type="checkbox" id="obrigatorio" name="obrigatorio" value="true" {% if campo and campo.obrigatorio %}checked{% endif %}>
       <label for="obrigatorio" style="margin:0;">Campo obrigatório</label>

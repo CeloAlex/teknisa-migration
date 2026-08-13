@@ -46,6 +46,19 @@ async def _valores_distintos_campo(db: AsyncSession, coluna) -> list[str]:
     return [linha[0] for linha in (await db.execute(stmt)).all()]
 
 
+async def _nomes_campos_do_template(db: AsyncSession, codigo: str) -> list[str]:
+    """Nomes de `campo` já cadastrados no mesmo template — autocomplete para
+    `duplicata_agrupado_por`/`alerta_se_vazio_quando_campo`, que sempre referenciam outro
+    campo do próprio dicionário (nunca de outro template)."""
+    stmt = (
+        select(TemplateCampo.campo)
+        .join(Template, Template.id == TemplateCampo.template_id)
+        .where(Template.codigo == codigo)
+        .order_by(TemplateCampo.campo)
+    )
+    return [linha[0] for linha in (await db.execute(stmt)).all()]
+
+
 async def _sugestoes_campo(db: AsyncSession) -> dict[str, list[str]]:
     tipos = await _valores_distintos_campo(db, TemplateCampo.tipo)
     valores_padrao = await _valores_distintos_campo(db, TemplateCampo.valor_padrao)
@@ -159,6 +172,7 @@ async def form_novo_campo(
             "codigo": codigo,
             "campo": None,
             "catalogo_tabelas": catalogo_tabelas,
+            "nomes_campos": await _nomes_campos_do_template(db, codigo),
             **(await _sugestoes_campo(db)),
         },
     )
@@ -185,6 +199,11 @@ async def criar_campo(
     gerador_pk: bool = Form(False),
     gerador_pk_contador: str = Form(""),
     gerador_pk_seed: int | None = Form(None),
+    dominio_valores: str = Form(""),
+    duplicata_no_lote: str = Form(""),
+    duplicata_agrupado_por: str = Form(""),
+    alerta_se_vazio_quando_campo: str = Form(""),
+    alerta_se_vazio_quando_valores: str = Form(""),
     usuario: Usuario = Depends(exigir_papel(Papel.ADMINISTRADOR)),
     db: AsyncSession = Depends(get_db),
 ):
@@ -210,6 +229,11 @@ async def criar_campo(
             gerador_pk=gerador_pk,
             gerador_pk_contador=gerador_pk_contador or None,
             gerador_pk_seed=gerador_pk_seed,
+            dominio_valores=dominio_valores or None,
+            duplicata_no_lote=duplicata_no_lote or None,
+            duplicata_agrupado_por=duplicata_agrupado_por or None,
+            alerta_se_vazio_quando_campo=alerta_se_vazio_quando_campo or None,
+            alerta_se_vazio_quando_valores=alerta_se_vazio_quando_valores or None,
         )
     )
     return RedirectResponse(url=f"/portal-migration/admin/templates/{codigo}", status_code=303)
@@ -233,6 +257,7 @@ async def form_editar_campo(
             "codigo": codigo,
             "campo": campo,
             "catalogo_tabelas": catalogo_tabelas,
+            "nomes_campos": await _nomes_campos_do_template(db, codigo),
             **(await _sugestoes_campo(db)),
         },
     )
@@ -260,6 +285,11 @@ async def editar_campo(
     gerador_pk: bool = Form(False),
     gerador_pk_contador: str = Form(""),
     gerador_pk_seed: int | None = Form(None),
+    dominio_valores: str = Form(""),
+    duplicata_no_lote: str = Form(""),
+    duplicata_agrupado_por: str = Form(""),
+    alerta_se_vazio_quando_campo: str = Form(""),
+    alerta_se_vazio_quando_valores: str = Form(""),
     usuario: Usuario = Depends(exigir_papel(Papel.ADMINISTRADOR)),
     db: AsyncSession = Depends(get_db),
 ):
@@ -282,6 +312,11 @@ async def editar_campo(
     alvo.gerador_pk = gerador_pk
     alvo.gerador_pk_contador = gerador_pk_contador or None
     alvo.gerador_pk_seed = gerador_pk_seed
+    alvo.dominio_valores = dominio_valores or None
+    alvo.duplicata_no_lote = duplicata_no_lote or None
+    alvo.duplicata_agrupado_por = duplicata_agrupado_por or None
+    alvo.alerta_se_vazio_quando_campo = alerta_se_vazio_quando_campo or None
+    alvo.alerta_se_vazio_quando_valores = alerta_se_vazio_quando_valores or None
     return RedirectResponse(url=f"/portal-migration/admin/templates/{codigo}", status_code=303)
 
 
