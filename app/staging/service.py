@@ -1,5 +1,6 @@
 import asyncio
-from datetime import date, datetime, timezone
+import logging
+from datetime import date, datetime, time, timezone
 from typing import Any
 
 from sqlalchemy import delete, select
@@ -11,18 +12,24 @@ from app.ingestion.xlsx import LINHA_PLANILHA, ArquivoInvalido
 from app.metadata.resolver import resolver_template
 from app.metadata.schemas import TemplateMetadata
 from app.migracoes.estado import ResumoTemplate, recalcular_status
-from app.models.migracao import Migracao, MigracaoStatus, MigracaoTemplateStatus, TemplateStatus
+from app.models.migracao import Migracao, MigracaoEvento, MigracaoStatus, MigracaoTemplateStatus, TemplateStatus
 from app.models.staging import ScriptGerado, StagingBruto, StagingNormalizado, ValidacaoResultado
 from app.models.template import Template
 from app.transformation.engine import aplicar_transformacoes
 from app.validation.classificacao import Classificacao
 from app.validation.engine import validar_linha, verificar_duplicatas_lote
 
+logger = logging.getLogger(__name__)
+
 
 def _json_seguro(valor: Any) -> Any:
-    """Converte valores que o openpyxl pode devolver (datetime/date) para algo
-    serializável em JSONB — o resto (str/int/float/bool/None) já passa direto."""
-    if isinstance(valor, (datetime, date)):
+    """Converte valores que o openpyxl pode devolver (datetime/date/time) para algo
+    serializável em JSONB — o resto (str/int/float/bool/None) já passa direto. Colunas de
+    horário puro no XLSX (ex.: 1ª Entrada/Saída da Escala de Trabalho) voltam do openpyxl
+    como `datetime.time`, que não é subclasse de `date`/`datetime` — faltava aqui, e sem
+    isso a gravação em `staging_bruto` (JSONB) falhava dentro da task em segundo plano,
+    travando a importação silenciosamente em "0/0 linhas processadas"."""
+    if isinstance(valor, (datetime, date, time)):
         return valor.isoformat()
     return valor
 
@@ -213,6 +220,30 @@ async def _processar_pendentes_ate_o_fim(
     await session.commit()
 
 
+async def _marcar_falha_interna(
+    session: AsyncSession, mts: MigracaoTemplateStatus, migracao_id: int, template_codigo: str, erro: Exception
+) -> None:
+    """Evita que uma falha inesperada na task em segundo plano deixe a importação travada
+    silenciosamente em "0/0 linhas processadas" pra sempre — sem isso, `asyncio.create_task`
+    engole a exceção (ninguém aguarda o resultado dessa task) e nada na tela avisa que algo
+    deu errado (bug real encontrado via `railway logs`, Escala de Trabalho: `datetime.time`
+    não serializável travou a gravação em staging_bruto). `session.rollback()` é necessário
+    antes de reusar a sessão porque uma falha no meio de um commit deixa a transação
+    abortada."""
+    logger.exception("Falha ao processar arquivo em segundo plano (mts_id=%s)", mts.id)
+    await session.rollback()
+    mts.status = TemplateStatus.COM_INCONSISTENCIAS.value
+    session.add(
+        MigracaoEvento(
+            migracao_id=migracao_id,
+            evento=f"Falha interna ao importar {template_codigo}: {erro}"[:300],
+            usuario="sistema",
+        )
+    )
+    await _atualizar_status_migracao(session, migracao_id)
+    await session.commit()
+
+
 async def processar_arquivo_em_background(
     mts_id: int, template_id: int, conteudo: bytes, nr_org: int, tamanho_lote: int, atraso_por_lote: float = 0.001
 ) -> None:
@@ -234,21 +265,24 @@ async def processar_arquivo_em_background(
             await session.commit()
             return
 
-        mts.total_linhas = len(linhas_brutas)
-        mts.status = TemplateStatus.EM_IMPORTACAO.value
-        session.add_all(
-            [
-                StagingBruto(
-                    migracao_template_status_id=mts.id,
-                    linha=linha.get(LINHA_PLANILHA) or 0,
-                    dados_json=_linha_bruta_para_json(linha),
-                )
-                for linha in linhas_brutas
-            ]
-        )
-        await session.commit()
+        try:
+            mts.total_linhas = len(linhas_brutas)
+            mts.status = TemplateStatus.EM_IMPORTACAO.value
+            session.add_all(
+                [
+                    StagingBruto(
+                        migracao_template_status_id=mts.id,
+                        linha=linha.get(LINHA_PLANILHA) or 0,
+                        dados_json=_linha_bruta_para_json(linha),
+                    )
+                    for linha in linhas_brutas
+                ]
+            )
+            await session.commit()
 
-        await _processar_pendentes_ate_o_fim(session, mts, template_meta, nr_org, tamanho_lote, atraso_por_lote)
+            await _processar_pendentes_ate_o_fim(session, mts, template_meta, nr_org, tamanho_lote, atraso_por_lote)
+        except Exception as exc:  # noqa: BLE001 — qualquer falha aqui não pode travar silenciosamente em "0/0"
+            await _marcar_falha_interna(session, mts, mts.migracao_id, template_row.codigo, exc)
 
 
 async def retomar_processamento_em_background(
@@ -261,7 +295,10 @@ async def retomar_processamento_em_background(
         mts = await session.get(MigracaoTemplateStatus, mts_id)
         template_row = await session.get(Template, template_id)
         template_meta = await resolver_template(session, template_row.codigo)
-        await _processar_pendentes_ate_o_fim(session, mts, template_meta, nr_org, tamanho_lote, atraso_por_lote)
+        try:
+            await _processar_pendentes_ate_o_fim(session, mts, template_meta, nr_org, tamanho_lote, atraso_por_lote)
+        except Exception as exc:  # noqa: BLE001 — mesma proteção de `processar_arquivo_em_background`
+            await _marcar_falha_interna(session, mts, mts.migracao_id, template_row.codigo, exc)
 
 
 async def buscar_linhas_validas(session: AsyncSession, mts_id: int) -> list[dict[str, Any]]:

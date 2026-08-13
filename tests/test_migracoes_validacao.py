@@ -105,3 +105,32 @@ async def test_alerta_nao_bloqueia_e_migracao_conclui_com_alertas(
 
     detalhe = (await client.get(f"/migracoes/{migracao_id}")).json()
     assert detalhe["status"] == "concluida_com_alertas"
+
+
+async def test_falha_interna_na_importacao_nao_trava_em_0_0(
+    client: AsyncClient, nr_org_teste: int, monkeypatch
+) -> None:
+    """Reproduz o bug real da Escala de Trabalho (achado via `railway logs` de produção):
+    `datetime.time` não serializável em JSONB derrubava a task em segundo plano sem
+    nenhum tratamento, deixando o template travado em "0/0 linhas processadas" pra sempre.
+    Simula qualquer falha inesperada na transformação (não precisa ser exatamente essa) para
+    garantir que a proteção genérica em `_marcar_falha_interna` funciona: o template vira
+    "com_inconsistencias" e um evento explicando a falha fica registrado, em vez de ficar
+    silenciosamente parado."""
+
+    def _sempre_falha(*args, **kwargs):
+        raise TypeError("Object of type time is not JSON serializable")
+
+    monkeypatch.setattr("app.staging.service.aplicar_transformacoes", _sempre_falha)
+
+    migracao = await _criar_migracao(client, nr_org_teste)
+    migracao_id = migracao["id"]
+
+    conteudo = _xlsx([("001", "0019", "Agência Válida")])
+    status = await _upload_e_aguardar(client, migracao_id, conteudo, {"validado", "com_inconsistencias"})
+    assert status["status"] == "com_inconsistencias"
+    assert status["total_linhas"] == 1
+
+    detalhe = (await client.get(f"/migracoes/{migracao_id}")).json()
+    eventos = [e["evento"] for e in detalhe["eventos"]]
+    assert any("Falha interna ao importar AGENCIAS_BANCARIAS" in e for e in eventos)
