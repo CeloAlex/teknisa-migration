@@ -106,6 +106,24 @@ def _codigo_diferente_15(valor: Any, campo: CampoMetadata) -> bool:
     return not _codigo_igual_15(valor, campo)
 
 
+def _tipo_relacionamento_eh_vinculo(valor: Any, campo: CampoMetadata) -> bool:
+    """Regra de campo derivado do Evento Relacionado (Seção 26.4): roteia o bloco de INSERT
+    conforme o "Tipo Relacionamento" da linha (VINCULO/ESTRUTURA/OCUPACAO) — recebe o valor
+    já normalizado (`upper_sem_acento`) do campo `TIPORELACIONAMENTO`."""
+    valores = valor if isinstance(valor, list) else [valor]
+    return any(str(v).strip() == "VINCULO" for v in valores if v is not None)
+
+
+def _tipo_relacionamento_eh_estrutura(valor: Any, campo: CampoMetadata) -> bool:
+    valores = valor if isinstance(valor, list) else [valor]
+    return any(str(v).strip() == "ESTRUTURA" for v in valores if v is not None)
+
+
+def _tipo_relacionamento_eh_ocupacao(valor: Any, campo: CampoMetadata) -> bool:
+    valores = valor if isinstance(valor, list) else [valor]
+    return any(str(v).strip() == "OCUPACAO" for v in valores if v is not None)
+
+
 def _numero_decimal(valor: Any, campo: CampoMetadata) -> str | None:
     if valor in (None, ""):
         return None
@@ -244,6 +262,9 @@ CONVERSOES: dict[str, ConversaoFn] = {
     "data_iso": _data_iso,
     "codigo_igual_15": _codigo_igual_15,
     "codigo_diferente_15": _codigo_diferente_15,
+    "tipo_relacionamento_eh_vinculo": _tipo_relacionamento_eh_vinculo,
+    "tipo_relacionamento_eh_estrutura": _tipo_relacionamento_eh_estrutura,
+    "tipo_relacionamento_eh_ocupacao": _tipo_relacionamento_eh_ocupacao,
     "numero_decimal": _numero_decimal,
     "vazio_para_n": _vazio_para_n,
     "nenhum_vazio": _nenhum_vazio,
